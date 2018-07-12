@@ -1,0 +1,10 @@
+certifi==2018.4.16
+chardet==3.0.4
+Django==2.0.5
+idna==2.7
+ipfsapi==0.4.3
+pytz==2018.5
+requests==2.19.1
+six==1.11.0
+urllib3==1.23
+wincertstore==0.2
