@@ -13,6 +13,6 @@ docker-compose up
 ```
 Run tests
 ```
-docker-compose -f test.yml up
+docker-compose run web python manage.py test
 ```
 Note: The ipfs container must be terminated manually after the test
