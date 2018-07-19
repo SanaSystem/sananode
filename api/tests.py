@@ -1,6 +1,7 @@
 from django.test import TestCase
 import ipfsapi
 import time
+from rest_framework.test import APIClient
 # Create your tests here.
 class TestSetup(TestCase):
     def test_ipfs(self):
@@ -19,3 +20,8 @@ class TestSetup(TestCase):
         response = response.decode()
         print(response)
         self.assertEqual(response, response_must_be)
+
+class ViewTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        #self.user_data = {'name':}
