@@ -7,6 +7,8 @@ services:
     image: rabbitmq:alpine
   redis:
     image: redis
+  db:
+    image: postgres
   worker:
     build: .
     command: celery -A tasks worker --loglevel=info
