@@ -31,13 +31,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
-        user = User.objects.create(username=profile_data.get('phone'), **validated_data)
+        user = User.objects.create_user(username=profile_data.get('phone'), **validated_data)
         user.profile.phone = profile_data.get('phone')
         user.profile.rsa_public_key = profile_data.get('rsa_public_key')
         user.profile.encrypted_rsa_private_key = profile_data.get('encrypted_rsa_public_key')
         user.save()
         return user
-    
-    def update(self, validated_data):
-        pass
 
