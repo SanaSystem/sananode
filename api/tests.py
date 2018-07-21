@@ -21,7 +21,5 @@ class TestSetup(TestCase):
         print(response)
         self.assertEqual(response, response_must_be)
 
-class ViewTest(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        #self.user_data = {'name':}
+
+
