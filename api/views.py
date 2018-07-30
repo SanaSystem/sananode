@@ -5,6 +5,8 @@ from rest_framework.reverse import reverse
 from .serializers import UserSerializer, MedBlockSerializer
 from .models import User, MedBlock
 from rest_framework.decorators import api_view
+from api.permissions import IsOwnerOrReadOnly
+from rest_framework.permissions import (AllowAny, IsAuthenticated, IsAdminUser, IsAuthenticatedOrReadOnly)
 # Create your views here.
 
 @api_view(['GET'])
@@ -41,7 +43,11 @@ class MedBlockListView(generics.ListCreateAPIView):
     """
     queryset = MedBlock.objects.all()
     serializer_class = MedBlockSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,
+                          IsOwnerOrReadOnly,)
 
 class MedBlockDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = MedBlockSerializer
     queryset = MedBlock.objects.all()
+    permission_classes = (IsAuthenticatedOrReadOnly,
+                          IsOwnerOrReadOnly,)
