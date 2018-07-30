@@ -21,6 +21,7 @@ class Profile(models.Model):
         instance.profile.save()
 
 class MedBlock(models.Model):
+    owner = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     user = models.ForeignKey(User, models.CASCADE, 'medblocks')
     ipfs_hash = models.CharField(max_length=200, blank=True, null=True)
     format = models.CharField(max_length=200)
