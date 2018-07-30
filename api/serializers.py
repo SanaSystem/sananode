@@ -2,6 +2,7 @@ from rest_framework import serializers
 from api.models import Profile, User, MedBlock, Key
 
 class MedBlockSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
     signature = serializers.CharField(write_only=True)
     class Meta:
         model = MedBlock
