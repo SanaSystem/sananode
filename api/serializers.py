@@ -2,18 +2,20 @@ from rest_framework import serializers
 from api.models import Profile, User, MedBlock, Key
 
 class MedBlockSerializer(serializers.ModelSerializer):
-    owner = serializers.ReadOnlyField(source='owner.username')
-    signature = serializers.CharField(write_only=True)
+    #owner = serializers.ReadOnlyField(source='owner.username')
+    #signature = serializers.CharField(write_only=True)
     class Meta:
         model = MedBlock
         url = serializers.HyperlinkedIdentityField(view_name='medblock-detail')
-        read_only_fields = ('last_synced',)
-        fields = ('url','last_synced', 'format', 'data', 'user','signature')
-    def validate(self, data):
-        # Verify signature
-        if not data.get('signature') == '123':
-            raise serializers.ValidationError("Invalid Signature", "203")
-        return data
+        read_only_fields = ('last_synced', 'user')
+        fields = ('url','last_synced', 'format', 'data', 'user')
+        
+    # def validate(self, data):
+    #     # Verify signature
+    #     if not data.get('signature') == '123':
+    #         raise serializers.ValidationError("Invalid Signature", "203")
+    #     return data
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
