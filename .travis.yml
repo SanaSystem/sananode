@@ -1,0 +1,8 @@
+sudo: required
+
+services:
+  - docker
+install:
+   - docker-compose build
+script:
+  - docker-compose run web python manage.py test

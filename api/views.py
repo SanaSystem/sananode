@@ -45,6 +45,9 @@ class MedBlockListView(generics.ListCreateAPIView):
     serializer_class = MedBlockSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,
                           IsOwnerOrReadOnly,)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 
 class MedBlockDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = MedBlockSerializer

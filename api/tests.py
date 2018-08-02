@@ -2,8 +2,10 @@ from django.test import TestCase
 import ipfsapi
 import time
 from rest_framework.test import APIRequestFactory
-from .views import UserListView, UserDetailView
+from .views import UserListView, UserDetailView, MedBlockListView
 from .models import User, MedBlock
+from rest_framework.test import force_authenticate
+
 # Create your tests here.
 class TestSetup(TestCase):
     def test_ipfs(self):
@@ -47,5 +49,32 @@ class TestUserAPIs(TestCase):
         self.assertTrue(user.check_password('testpass'))
     
 class MedBlockAPITestCase(TestCase):
-    pass
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        req = self.factory.post(
+            '/api/user/', 
+            {'profile':{
+                'phone':9585841964,
+                'rsa_public_key':'testrsa'
+            },
+            'password':'test'
+            }, format='json')
+        response = UserListView.as_view()(req)
     
+    def test_user_exists(self):
+        user = User.objects.first()
+        self.assertEqual(user.username, '9585841964')
+    
+    def test_create_medblock(self):
+        user = User.objects.first()
+        req = self.factory.post(
+            '/api/medblock/',
+            {'data':'testdata',
+            'format':'testformat'
+            },
+            format='json'
+        )
+        force_authenticate(req, user=user)
+        resp = MedBlockListView.as_view()(req)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(MedBlock.objects.first().data, 'testdata')
