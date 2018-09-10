@@ -79,10 +79,18 @@ rsa:...,
 }
 ```
 ## PouchDB:
-- Create user
-- Create medblock
-- Add permission keys to existing medblock
+- All databases can be created locally using [pouchdb.js](https://pouchdb.com/learn.html)
+
+- User and authentication can be managed with [pouch-authentication.js](https://github.com/pouchdb-community/pouchdb-authentication)
+
+- Either set up replication to the backend couchDB instance or directly interact with it 
 ## WebCrypto
-- Encrypt medblock data
+This is to encrypt data before adding to ipfs.
+- Provide a RSA key to the user
+- Generate random key to encrypt data with AES
+- Encrypt the random key asymmetrically with RSA (user specific)
+- Add data to ipfs, get `ipfs_hash` and add encrypted key to the `keys` field
+
 ## IPFS client
-- Add medblock data to ipfs node
+Connect to the ipfs node on the backend using the [IPFS api](https://github.com/ipfs/js-ipfs-api) and add encrypted content.
+
