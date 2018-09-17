@@ -8,7 +8,9 @@ services:
   redis:
     image: redis
   db:
-    image: postgres
+    image: couchdb
+    ports:
+    - "8001:5984"
   worker:
     build: .
     command: celery -A tasks worker --loglevel=info
@@ -23,7 +25,7 @@ services:
     volumes:
       - .:/code/
     ports:
-      - "8000:8000"
+      - 8000:8000
     depends_on:
       - ipfs
       - worker
