@@ -8,6 +8,8 @@ services:
   redis:
     image: redis
   db:
+    image: postgres
+  couchdb:
     image: couchdb
     ports:
     - "8001:5984"
@@ -27,6 +29,5 @@ services:
     ports:
       - 8000:8000
     depends_on:
-      - ipfs
       - worker
-  
+      - db
