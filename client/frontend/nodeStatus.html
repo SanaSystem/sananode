@@ -6,14 +6,16 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Node Status</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
 </head>
 <body>
-    <nav class="navbar" role="navigation" aria-label="main navigation">
+    <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
+        <!-- Navigation bar -->
         <div class="navbar-brand">
           <a class="navbar-item" href="/">
-            SANA Node
+            <img src="assets/logo.png" alt="" >
           </a>
+          <a href="" class="navbar-item"><span class="subtitle">SANA Node</span> &nbsp;beta</a>
           <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
@@ -21,19 +23,143 @@
         </a>
         </div>
         <div class="navbar-menu">
-            <div class="navbar-end">
-                <div class="navbar-item">
-                    <div class="field is-grouped">
-                        <p class="control">
-                            <a href="" class="button"><span>Import Key</span></a>
-                        </p>
-                        <p class="control">
-                            <a href="" class="button is-primary"><span>Create Key</span></a>
-                        </p>
-                    </div>
+            <div class="navbar-end ">
+                <!-- If not logged in -->
+                <div id="action-buttons" class="">
+                        <div class="navbar-item">
+                            <div class="field is-grouped">
+                                <p class="control">
+                                    <a href="" class="button"><span>Import Key</span></a>
+                                </p>
+                                <p class="control">
+                                    <a href="" class="button is-primary"><span>Create Key</span></a>
+                                </p>
+                            </div>
+                        </div>
+                </div>
+                <!-- If logged in -->
+                <div class="navbar-item has-dropdown is-hoverable">
+                        <div class="navbar-link">
+                            Sidharth Ramesh
+                        </div>
+                        <div class="navbar-dropdown">
+                            <a class="navbar-item">
+                                <div>
+                                Manage Keys
+                                </div>
+                            </a>
+                            <a class="navbar-item">
+                                <div>
+                                Sign Out
+                                </div>
+                            </a>
+                        </div>         
                 </div>
             </div>
         </div>
     </nav>
+    <section class="section">
+        <div class="columns">
+            <!-- Side bar -->
+            <div class="column is-4-tablet is-3-desktop is-2-widescreen">
+                <aside class="menu">
+                    <ul class="menu-list">
+                        <li><a href=""><span class="icon"><i class="fas fa-check-circle"></i></span> Status</a></li>
+                        <li><a class="is-active" href=""><span class="icon"><i class="fas fa-book"></i></span> Records</a></li>
+                        <li><a href=""><span class="icon"><i class="fas fa-bezier-curve"></i></span> Peers</a></li>
+                    </ul>
+                </aside>
+            </div>
+
+            <!-- Node Status content -->
+            <div class="column is-hidden">
+                <h1 class="title">Node Status</h1>
+
+                <div class="columns is-multiline">
+                    <div class="column is-12-tablet is-6-desktop is-3-widescreen">
+                        <div class="notification is-success has-text">
+                            <p class="title is-1">1,232</p>
+                            <p class="subtitle is-4">Records</p>
+                        </div>
+                    </div>
+
+                    <div class="column is-12-tablet is-6-desktop is-3-widescreen">
+                        <div class="notification is-link has-text">
+                            <p class="title is-1">76</p>
+                            <p class="subtitle is-4">Peers</p>
+                        </div>
+                    </div>
+                      
+                      </div>
+                <div class="content">
+                    <p class="subtitle">CouchDB node: <span class="has-text-success has-text-weight-bold">Running</span></p>
+                    <p class="subtitle">IPFS node: <span class="has-text-success has-text-weight-bold">Running</span></p>
+                    <p class="subtitle">Node IP Address: <span class="has-text-black has-text-weight-bold">192.168.0.103</span></p>
+                </div>
+            </div>
+            <!-- Record content -->
+            <div class="column">
+                <h1 class="title">Records</h1>
+                <nav class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                        <p class="subtitle is-5">
+                            <strong>2</strong> records
+                        </p>
+                        </div>
+                    
+                        <p class="level-item">
+                        <a class="button is-success" href="new-book.html">New</a>
+                        </p>
+                    
+                        
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item is-hidden-tablet-only">
+                            <div class="field has-addons">
+                                <p class="control">
+                                <input class="input" type="text" placeholder="Recipient, Format…">
+                                </p>
+                                <p class="control">
+                                <button class="button">
+                                    Search
+                                </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+                <div class="notification is-warning modal-success-notification">
+                        <button class="delete close-notification"></button>
+                        <i class="fas fa-exclamation-triangle"></i> You need to import your keys to be able to add or view encrypted records
+                </div>
+                <table class="table is-fullwidth is-hoverable">
+                        <thead>
+                          <tr>
+                            <th>Record ID</th>
+                            <th>Recipient</th>
+                            <th>Format</th>
+                            <th>Permission</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1233</td>
+                                <td>tornadoalert@gmail.com</td>
+                                <td>History-AES-256</td>
+                                <td><a href="" class="button is-info">View</a></td>
+                            </tr>
+                            <tr>
+                                <td>433</td>
+                                <td>tornadoalert@gmail.com</td>
+                                <td>Xray-AES-256</td>
+                                <td><a href="" class="button is-danger is-loading" disabled>Request</a></td>
+                            </tr>
+                        </tbody>
+            </div>
+        </div>
+        
+        
+    </section>
 </body>
 </html>
