@@ -13,6 +13,9 @@ services:
     image: couchdb
     ports:
     - "8001:5984"
+    environment:
+    - COUCHDB_USER=admin 
+    - COUCHDB_PASSWORD=admin
   worker:
     build: .
     command: celery -A tasks worker --loglevel=info
