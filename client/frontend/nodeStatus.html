@@ -67,11 +67,12 @@
                         <li><a href=""><span class="icon"><i class="fas fa-check-circle"></i></span> Status</a></li>
                         <li><a class="is-active" href=""><span class="icon"><i class="fas fa-book"></i></span> Records</a></li>
                         <li><a href=""><span class="icon"><i class="fas fa-bezier-curve"></i></span> Peers</a></li>
+                        <li><a href=""><span class="icon"><i class="fas fa-cog"></i></span> Settings</a></li>
                     </ul>
                 </aside>
             </div>
 
-            <!-- Node Status content -->
+            <!-- Node Status -->
             <div class="column is-hidden">
                 <h1 class="title">Node Status</h1>
 
@@ -97,7 +98,7 @@
                     <p class="subtitle">Node IP Address: <span class="has-text-black has-text-weight-bold">192.168.0.103</span></p>
                 </div>
             </div>
-            <!-- Record content -->
+            <!-- Record List -->
             <div class="column">
                 <h1 class="title">Records</h1>
                 <nav class="level">
@@ -109,10 +110,8 @@
                         </div>
                     
                         <p class="level-item">
-                        <a class="button is-success" href="new-book.html">New</a>
-                        </p>
-                    
-                        
+                        <a class="button is-success" onclick="document.querySelector('.modal').classList.add('is-active')">New</a>
+                        </p> 
                     </div>
                     <div class="level-right">
                         <div class="level-item is-hidden-tablet-only">
@@ -156,10 +155,56 @@
                                 <td><a href="" class="button is-danger is-loading" disabled>Request</a></td>
                             </tr>
                         </tbody>
+                </table>
+            </div>
+            <!-- New Record -->
+            <div class="modal">
+                <div class="modal-background"></div>
+                <div class="modal-content">
+                    <div class="box">
+                        <h1 class="title is-size-4 has-text-centered">New Record</h1>
+                            <form>
+                                    <div class="field">
+                                      <div class="field">
+                                        <label class="label">Recipient</label>
+                                        <div class="control">
+                                          <input class="input" type="text" placeholder="e.g. tornadoalert@gmail.com" required>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div class="field">
+                                        <label for="" class="label">Format</label>
+                                        <div class="control">
+                                            <div class="select is-fullwidth">
+                                                <select name="" id="">
+                                                    <option value="">
+                                                        Medical History-AES-256
+                                                    </option>
+                                                    <option value="">
+                                                        Xray-AES-256
+                                                    </option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                            <div class="field">
+                                              <label class="label">Data</label>
+                                              <div class="control">
+                                                <textarea class="textarea" placeholder="All text data goes here..."></textarea>
+                                              </div>
+                                            </div>
+                                          </div>
+                                    <div class="field">
+                                        <button class="button is-fullwidth is-success">Submit</button>
+                                    </div>
+                                  </form>
+                    </div>
+                        
+                </div>
+                <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal').classList.remove('is-active')"></button>
             </div>
         </div>
-        
-        
     </section>
 </body>
 </html>
