@@ -31,17 +31,17 @@
                                 Sidharth Ramesh
                             </div>
                             <div class="navbar-dropdown">
-                                <a class="navbar-item" v-on:click="current = 'notifications'">
+                                <a class="navbar-item" @click="current = 'notifications'">
                                     <div>
                                     Notifications
                                     </div>
                                 </a>
-                                <a class="navbar-item" v-on:click="current = 'managekeys'">
+                                <a class="navbar-item" @click="current = 'managekeys'">
                                     <div>
                                     Manage Keys
                                     </div>
                                 </a>
-                                <a class="navbar-item" v-on:click="key = ''">
+                                <a class="navbar-item" @click="key = ''">
                                     <div>
                                     Sign Out
                                     </div>
@@ -56,7 +56,7 @@
                                         <a class="button"><span>Import Key</span></a>
                                     </p>
                                     <p class="control">
-                                        <a class="button is-primary"><span>Create Key</span></a>
+                                        <a class="button is-primary" onclick="document.querySelector('.modal.create-key').classList.add('is-active')"><span>Create Key</span></a>
                                     </p>
                                 </div>
                             </div>
@@ -70,10 +70,10 @@
                 <div class="column is-4-tablet is-3-desktop is-2-widescreen">
                     <aside class="menu">
                         <ul class="menu-list">
-                            <li><a v-bind:class="{'is-active': (current == 'status')}" v-on:click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'records')}" v-on:click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'peers')}" v-on:click="current = 'peers'"><span class="icon"><i class="fas fa-bezier-curve"></i></span>Peers</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'settings')}" v-on:click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'status')}" @click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'records')}" @click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'peers')}" @click="current = 'peers'"><span class="icon"><i class="fas fa-bezier-curve"></i></span>Peers</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
                         </ul>
                     </aside>
                 </div>
@@ -118,7 +118,7 @@
                                 </div>
                             
                                 <p class="level-item">
-                                <a class="button is-success" onclick="document.querySelector('.modal').classList.add('is-active')">New</a>
+                                <a class="button is-success" onclick="document.querySelector('.modal.new-record').classList.add('is-active')">New</a>
                                 </p> 
                             </div>
                             <div class="level-right">
@@ -183,8 +183,50 @@
                     </div>
 
                 </div>
+                <!-- Create Key  -->
+                <div class="modal create-key">
+                    <div class="modal-background"></div>
+                    <div class="modal-content">
+                        <div class="box">
+                            <h1 class="title is-size-4 has-text-centered">Create Key</h1>
+                            <form action="">
+                                <div class="field">
+                                    <label for="" class="label">Name</label>
+                                    <div class="control">
+                                        <input type="text" class="input">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="" class="label">Email</label>
+                                    <div class="control">
+                                        <input type="email" class="input">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="" class="label">Keys</label>                              
+                                </div>
+                                <div class="field has-addons">
+                                        <div class="control is-expanded">
+                                          <input class="input" type="text" placeholder="RSA keys">
+                                        </div>
+                                        <div class="control">
+                                          <a class="button">
+                                            Regenerate
+                                          </a>
+                                        </div>
+                                </div>
+                                <div class="field">
+                                    <div class="buttons">
+                                        <a href="" class="button is-fullwidth is-success">Register & Export Key</a>
+                                    </div>
+                                </div>           
+                            </form>
+                        </div>
+                    </div>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal.create-key').classList.remove('is-active')"></button>
+                </div>
                 <!-- New Record -->
-                <div class="modal">
+                <div class="modal new-record">
                     <div class="modal-background"></div>
                     <div class="modal-content">
                         <div class="box">
@@ -228,7 +270,7 @@
                         </div>
                             
                     </div>
-                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal').classList.remove('is-active')"></button>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal.new-record').classList.remove('is-active')"></button>
                 </div>
             </div>
         </section>
