@@ -16,7 +16,7 @@
               <a class="navbar-item" href="/">
                 <img src="assets/logo.png" alt="" >
               </a>
-              <a href="" class="navbar-item"><span class="subtitle">SANA Node</span> &nbsp;beta</a>
+              <a class="navbar-item"><span class="subtitle">SANA Node</span> &nbsp;beta</a>
               <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" onclick="document.querySelector('.navbar-menu').classList.toggle('is-active');">
                     <span aria-hidden="true"></span>
                     <span aria-hidden="true"></span>
@@ -26,9 +26,9 @@
             <div class="navbar-menu">
                 <div class="navbar-end ">
                     <!-- If logged in -->
-                    <div v-if="key != ''" class="navbar-item has-dropdown is-hoverable">
+                    <div v-if="currentUser.key != ''" class="navbar-item has-dropdown is-hoverable">
                             <div class="navbar-link">
-                                Sidharth Ramesh
+                                {{currentUser.name}}
                             </div>
                             <div class="navbar-dropdown">
                                 <a class="navbar-item" @click="current = 'notifications'">
@@ -41,7 +41,7 @@
                                     Manage Keys
                                     </div>
                                 </a>
-                                <a class="navbar-item" @click="key = ''">
+                                <a class="navbar-item" @click="unvalidatedJSON=''">
                                     <div>
                                     Sign Out
                                     </div>
@@ -53,7 +53,8 @@
                             <div class="navbar-item">
                                 <div class="field is-grouped">
                                     <p class="control">
-                                        <a href="" class="button"><span>Import Key</span></a>
+                                        <input type="file" @change="loadTextFromFile" id="hiddenFileElement" style="display:none">
+                                        <a class="button" onclick="document.querySelector('#hiddenFileElement').click()"><span>Import Key</span></a>
                                     </p>
                                     <p class="control">
                                         <a class="button is-primary" onclick="document.querySelector('.modal.create-key').classList.add('is-active')"><span>Create Key</span></a>
@@ -154,13 +155,13 @@
                                         <td>1233</td>
                                         <td>tornadoalert@gmail.com</td>
                                         <td>History-AES-256</td>
-                                        <td><a href="" class="button is-info">View</a></td>
+                                        <td><a  class="button is-info">View</a></td>
                                     </tr>
                                     <tr>
                                         <td>433</td>
                                         <td>tornadoalert@gmail.com</td>
                                         <td>Xray-AES-256</td>
-                                        <td><a href="" class="button is-danger is-loading" disabled>Request</a></td>
+                                        <td><a  class="button is-danger is-loading" disabled>Request</a></td>
                                     </tr>
                                 </tbody>
                         </table>
@@ -217,7 +218,7 @@
                                 </div>
                                 <div class="field">
                                     <input type="submit" class="button is-fullwidth is-success" value="Register & Export Key">
-                                        <!-- < href="" class="button is-fullwidth is-success"></a> -->
+                                        <!-- <  class="button is-fullwidth is-success"></a> -->
                                 </div>           
                             </form>
                         </div>
@@ -283,7 +284,7 @@
                 el: '#app',
                 data: {
                     current: 'status',
-                    key: '',
+                    unvalidatedJSON: '',
                     newUser:{
                         key: '',
                         name: '',
@@ -321,13 +322,55 @@
                         function downloadObjectAsJson(exportObj, exportName){
                             var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
                             var downloadAnchorNode = document.createElement('a');
-                            downloadAnchorNode.setAttribute("href",     dataStr);
+                            downloadAnchorNode.setAttribute("href", dataStr);
                             downloadAnchorNode.setAttribute("download", exportName + ".json");
                             document.body.appendChild(downloadAnchorNode); // required for firefox
                             downloadAnchorNode.click();
                             downloadAnchorNode.remove();
                           }                        
                         downloadObjectAsJson(data, 'user')
+                    },
+
+                    loadTextFromFile(ev) {
+                        const file = ev.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = e => this.unvalidatedJSON = e.target.result;
+                        reader.readAsText(file);
+                      }
+                },
+                computed: {
+                    currentUser () {
+                        val = this.unvalidatedJSON;
+                        if (val.length == 0) {
+                            return {
+                                name:'',
+                                email:'',
+                                key:''
+                            }
+                        }
+                        data = JSON.parse(val);
+                        user = {}
+                        var keys = Object.keys(data)
+                        if (keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('key') > -1 && keys.length == 3)  {
+                            window.crypto.subtle.importKey(
+                            "jwk", 
+                            data.key, 
+                            {
+                                name: "RSA-OAEP",
+                                hash: {name: "SHA-256"}
+                            }, 
+                            false, 
+                            ['decrypt'])
+                            .then(key => user.key=key)
+                            .catch(console.log)
+                            user.name = data.name;
+                            user.email = data.email;
+                            return user                            
+                        }
+                        else {
+                            
+                            alert("Wrong file motherfucker")
+                        }
                     }
                 }
             })
