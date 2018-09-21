@@ -16,7 +16,7 @@
               <a class="navbar-item" href="/">
                 <img src="assets/logo.png" alt="" >
               </a>
-              <a href="" class="navbar-item"><span class="subtitle">SANA Node</span> &nbsp;beta</a>
+              <a class="navbar-item"><span class="subtitle">SANA Node</span> &nbsp;beta</a>
               <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" onclick="document.querySelector('.navbar-menu').classList.toggle('is-active');">
                     <span aria-hidden="true"></span>
                     <span aria-hidden="true"></span>
@@ -26,22 +26,22 @@
             <div class="navbar-menu">
                 <div class="navbar-end ">
                     <!-- If logged in -->
-                    <div v-if="key != ''" class="navbar-item has-dropdown is-hoverable">
+                    <div v-if="currentUser.key != ''" class="navbar-item has-dropdown is-hoverable">
                             <div class="navbar-link">
-                                Sidharth Ramesh
+                                {{currentUser.name}}
                             </div>
                             <div class="navbar-dropdown">
-                                <a class="navbar-item" v-on:click="current = 'notifications'">
+                                <a class="navbar-item" @click="current = 'notifications'">
                                     <div>
                                     Notifications
                                     </div>
                                 </a>
-                                <a class="navbar-item" v-on:click="current = 'managekeys'">
+                                <a class="navbar-item" @click="current = 'managekeys'">
                                     <div>
                                     Manage Keys
                                     </div>
                                 </a>
-                                <a class="navbar-item" v-on:click="key = ''">
+                                <a class="navbar-item" @click="unvalidatedJSON=''">
                                     <div>
                                     Sign Out
                                     </div>
@@ -53,10 +53,11 @@
                             <div class="navbar-item">
                                 <div class="field is-grouped">
                                     <p class="control">
-                                        <a class="button"><span>Import Key</span></a>
+                                        <input type="file" @change="loadTextFromFile" id="hiddenFileElement" style="display:none">
+                                        <a class="button" onclick="document.querySelector('#hiddenFileElement').click()"><span>Import Key</span></a>
                                     </p>
                                     <p class="control">
-                                        <a class="button is-primary"><span>Create Key</span></a>
+                                        <a class="button is-primary" onclick="document.querySelector('.modal.create-key').classList.add('is-active')"><span>Create Key</span></a>
                                     </p>
                                 </div>
                             </div>
@@ -70,10 +71,10 @@
                 <div class="column is-4-tablet is-3-desktop is-2-widescreen">
                     <aside class="menu">
                         <ul class="menu-list">
-                            <li><a v-bind:class="{'is-active': (current == 'status')}" v-on:click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'records')}" v-on:click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'peers')}" v-on:click="current = 'peers'"><span class="icon"><i class="fas fa-bezier-curve"></i></span>Peers</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'settings')}" v-on:click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'status')}" @click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'records')}" @click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'peers')}" @click="current = 'peers'"><span class="icon"><i class="fas fa-bezier-curve"></i></span>Peers</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
                         </ul>
                     </aside>
                 </div>
@@ -118,7 +119,7 @@
                                 </div>
                             
                                 <p class="level-item">
-                                <a class="button is-success" onclick="document.querySelector('.modal').classList.add('is-active')">New</a>
+                                <a class="button is-success" onclick="document.querySelector('.modal.new-record').classList.add('is-active')">New</a>
                                 </p> 
                             </div>
                             <div class="level-right">
@@ -154,13 +155,13 @@
                                         <td>1233</td>
                                         <td>tornadoalert@gmail.com</td>
                                         <td>History-AES-256</td>
-                                        <td><a href="" class="button is-info">View</a></td>
+                                        <td><a  class="button is-info">View</a></td>
                                     </tr>
                                     <tr>
                                         <td>433</td>
                                         <td>tornadoalert@gmail.com</td>
                                         <td>Xray-AES-256</td>
-                                        <td><a href="" class="button is-danger is-loading" disabled>Request</a></td>
+                                        <td><a  class="button is-danger is-loading" disabled>Request</a></td>
                                     </tr>
                                 </tbody>
                         </table>
@@ -183,8 +184,49 @@
                     </div>
 
                 </div>
+                <!-- Create Key  -->
+                <div class="modal create-key">
+                    <div class="modal-background"></div>
+                    <div class="modal-content">
+                        <div class="box">
+                            <h1 class="title is-size-4 has-text-centered">Create Key</h1>
+                            <form action="" @submit.prevent="handleSubmit">
+                                <div class="field">
+                                    <label for="" class="label">Name</label>
+                                    <div class="control">
+                                        <input type="text" required v-model="newUser.name" class="input" placeholder="eg.John Smith">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="" class="label">Email</label>
+                                    <div class="control">
+                                        <input type="email" required v-model="newUser.email" class="input" placeholder="eg. yourname@domain.com">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="" class="label">Keys</label>                              
+                                </div>
+                                <div class="field has-addons">
+                                        <div class="control is-expanded">
+                                          <input required class="input" v-model="newUser.key.d" type="text" placeholder="Click on Genarate to get a random key">
+                                        </div>
+                                        <div class="control">   
+                                          <a class="button" v-on:click="generateKey">
+                                            Generate
+                                          </a>
+                                        </div>
+                                </div>
+                                <div class="field">
+                                    <input type="submit" class="button is-fullwidth is-success" value="Register & Export Key">
+                                        <!-- <  class="button is-fullwidth is-success"></a> -->
+                                </div>           
+                            </form>
+                        </div>
+                    </div>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal.create-key').classList.remove('is-active')"></button>
+                </div>
                 <!-- New Record -->
-                <div class="modal">
+                <div class="modal new-record">
                     <div class="modal-background"></div>
                     <div class="modal-content">
                         <div class="box">
@@ -228,7 +270,7 @@
                         </div>
                             
                     </div>
-                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal').classList.remove('is-active')"></button>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal.new-record').classList.remove('is-active')"></button>
                 </div>
             </div>
         </section>
@@ -236,7 +278,103 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
-    <script src="assets/pages.js"></script>
+    <!-- <script src="assets/pages.js"></script> -->
+    <script>
+            var main = new Vue({
+                el: '#app',
+                data: {
+                    current: 'status',
+                    unvalidatedJSON: '',
+                    newUser:{
+                        key: '',
+                        name: '',
+                        email: ''
+                    }
+                },
+                methods: {
+                    generateKey () {
+                        window.crypto.subtle.generateKey(
+                            {
+                                name: "RSA-OAEP",
+                                modulusLength: 2048, //can be 1024, 2048, or 4096
+                                publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                                hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+                            },
+                            true, //whether the key is extractable (i.e. can be used in exportKey)
+                            ["encrypt", "decrypt"] //must be ["encrypt", "decrypt"] or ["wrapKey", "unwrapKey"]
+                        )
+                        .then(key => window.crypto.subtle.exportKey("jwk",key.privateKey))
+                        .then(key => {
+                                this.newUser.key = key;
+                            })
+                        .catch(function(err){
+                            console.error(err);
+                        });				
+                    },
+
+                    handleSubmit () {
+                        data = {
+                            name: this.newUser.name,
+                            email: this.newUser.email,
+                            key: this.newUser.key
+                        }
+                        console.log(JSON.stringify(data));
+                        function downloadObjectAsJson(exportObj, exportName){
+                            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+                            var downloadAnchorNode = document.createElement('a');
+                            downloadAnchorNode.setAttribute("href", dataStr);
+                            downloadAnchorNode.setAttribute("download", exportName + ".json");
+                            document.body.appendChild(downloadAnchorNode); // required for firefox
+                            downloadAnchorNode.click();
+                            downloadAnchorNode.remove();
+                          }                        
+                        downloadObjectAsJson(data, 'user')
+                    },
+
+                    loadTextFromFile(ev) {
+                        const file = ev.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = e => this.unvalidatedJSON = e.target.result;
+                        reader.readAsText(file);
+                      }
+                },
+                computed: {
+                    currentUser () {
+                        val = this.unvalidatedJSON;
+                        if (val.length == 0) {
+                            return {
+                                name:'',
+                                email:'',
+                                key:''
+                            }
+                        }
+                        data = JSON.parse(val);
+                        user = {}
+                        var keys = Object.keys(data)
+                        if (keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('key') > -1 && keys.length == 3)  {
+                            window.crypto.subtle.importKey(
+                            "jwk", 
+                            data.key, 
+                            {
+                                name: "RSA-OAEP",
+                                hash: {name: "SHA-256"}
+                            }, 
+                            false, 
+                            ['decrypt'])
+                            .then(key => user.key=key)
+                            .catch(console.log)
+                            user.name = data.name;
+                            user.email = data.email;
+                            return user                            
+                        }
+                        else {
+                            
+                            alert("Wrong file motherfucker")
+                        }
+                    }
+                }
+            })
+    </script>
 
 </body>
 </html>
