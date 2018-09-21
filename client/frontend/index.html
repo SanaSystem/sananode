@@ -282,23 +282,29 @@
         </section>
     </div>
 
-
+    <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encryption.js"></script>
     <script>
+            let generaldata = new PouchDB('generaldata');
+
+            const DATA = {
+                current: 'status',
+                unvalidatedJSON: '',
+                newUser:{
+                    publicKey: '',
+                    privateKey: '',
+                    name: '',
+                    email: ''
+                },
+                ipAddress: ''
+            };
+
+            // Check if pouch contains already logged in user
+
             var main = new Vue({
                 el: '#app',
-                data: {
-                    current: 'status',
-                    unvalidatedJSON: '',
-                    newUser:{
-                        publicKey: '',
-                        privateKey: '',
-                        name: '',
-                        email: ''
-                    },
-                    ipAddress: ''
-                },
+                data: DATA,
                 created() {
                         //compatibility for firefox and chrome
                         var myPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
@@ -365,7 +371,6 @@
                             publicKey: this.newUser.publicKey,
                             privateKey: this.newUser.privateKey
                         }
-                        console.log(JSON.stringify(data));
                         function downloadObjectAsJson(exportObj, exportName){
                             var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
                             var downloadAnchorNode = document.createElement('a');
@@ -375,9 +380,10 @@
                             downloadAnchorNode.click();
                             downloadAnchorNode.remove();
                           }                        
-                        downloadObjectAsJson(data, 'user')
+                        downloadObjectAsJson(data, 'user');
+                        // Set the current user
+                        DATA.newUser = data;
                     },
-
                     loadTextFromFile(ev) {
                         const file = ev.target.files[0];
                         const reader = new FileReader();
