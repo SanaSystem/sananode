@@ -15,7 +15,9 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-
+from server.views import resigter_users, register_nodes
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^registerNode/', register_nodes),
+    url(r'^registerUser/', resigter_users)
 ]
