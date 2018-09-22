@@ -15,9 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from server.views import resigter_users, register_nodes
+from server.views import NodeListView, UserListView
+from rest_framework.urlpatterns import format_suffix_patterns
+
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^registerNode/', register_nodes),
-    url(r'^registerUser/', resigter_users)
+    url(r'^nodes/$', NodeListView.as_view()),
+    url(r'^users/$', UserListView.as_view())
 ]
+
+urlpatterns = format_suffix_patterns(urlpatterns)

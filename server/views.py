@@ -1,16 +1,13 @@
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import json
+from .serializers import NodeRegistrationSerializer, UserRegistrationSerializer
+from .models import NodeRegistration, UserRegistration
+from rest_framework import generics
 # Create your views here.
-@csrf_exempt
-def resigter_users(request):
-    data = json.loads(request.body)
-    print(data)
-    return JsonResponse({"gotit":True})
 
-@csrf_exempt
-def register_nodes(request):
-    data = json.loads(request.body)
-    print(data)
-    return JsonResponse({"gotit":True})
+class NodeListView(generics.ListCreateAPIView):
+    queryset = NodeRegistration.objects.all()
+    serializer_class = NodeRegistrationSerializer
+
+class UserListView(generics.ListCreateAPIView):
+    queryset = UserRegistration.objects.all()
+    serializer_class = UserRegistrationSerializer
+
