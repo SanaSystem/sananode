@@ -297,6 +297,12 @@
                     name: '',
                     email: ''
                 },
+                currentUser: {
+                    publicKey: '',
+                    privateKey: '',
+                    name: '',
+                    email: ''
+                },
                 ipAddress: ''
             };
 
@@ -306,20 +312,34 @@
             }, function (err) {});
 
             function saveUser () {
-                GENERAL.get('user').then(doc => {
-                    doc.data = DATA.unvalidatedJSON;
-                    return GENERAL.put(doc);
-                }).then(function () {
-                    // console.log('saved user');
-                }).catch(e => {
-                    if (e.status === 404) {
-                        GENERAL.put({
-                            data: DATA.unvalidatedJSON,
-                            _id: 'user'
-                        });
-                    }
-                    console.log(e);
-                });
+                if (validateUserJSON(DATA.unvalidatedJSON)) {
+                    GENERAL.get('user').then(doc => {
+                        doc.data = DATA.unvalidatedJSON;
+                        return GENERAL.put(doc);
+                    }).then(function () {
+                        // console.log('saved user');
+                    }).catch(e => {
+                        if (e.status === 404) {
+                            GENERAL.put({
+                                data: DATA.unvalidatedJSON,
+                                _id: 'user'
+                            });
+                        }
+                        console.log(e);
+                    });
+                }
+            };
+
+            function validateUserJSON (val) {
+                if (val.length === 0) {
+                    return true;
+                }
+                let data = JSON.parse(val);
+                let keys = Object.keys(data);
+                if (!(keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('privateKey') > -1 && keys.indexOf('privateKey') > -1)) {
+                    return false;
+                }
+                return true;
             };
 
             var main = new Vue({
@@ -425,7 +445,7 @@
                         saveUser();
                     }
                 },
-                computed: {
+                watch: {
                     currentUser () {
                         val = this.unvalidatedJSON;
                         if (val.length == 0) {
@@ -436,10 +456,9 @@
                                 privateKey:''
                             }
                         }
-                        data = JSON.parse(val);
                         user = {}
-                        var keys = Object.keys(data)
-                        if (keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('privateKey') > -1 && keys.indexOf('privateKey') > -1)  {
+                        if (validateUserJSON(val))  {
+                            data = JSON.parse(val);
                             window.crypto.subtle.importKey(
                             "jwk", 
                             data.privateKey, 
@@ -467,7 +486,7 @@
                             return user;
                         }
                         else {
-                            alert("Wrong file!")
+                            alert("Wrong file!");
                         }
                     },
                 }
