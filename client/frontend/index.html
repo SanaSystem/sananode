@@ -104,7 +104,7 @@
                         <div class="content">
                             <p class="subtitle">CouchDB node: <span class="has-text-success has-text-weight-bold">Running</span></p>
                             <p class="subtitle">IPFS node: <span class="has-text-success has-text-weight-bold">Running</span></p>
-                            <p class="subtitle">Node IP Address: <span class="has-text-black has-text-weight-bold">{{ipAddress}}</span></p>
+                            <p class="subtitle">Client IP Address: <span class="has-text-black has-text-weight-bold">{{ipAddress}}</span></p>
                         </div>
                     </div>
                     <!-- Record List -->
@@ -200,7 +200,7 @@
                                 <div class="field">
                                     <label for="" class="label">Name</label>
                                     <div class="control">
-                                        <input type="text" required v-model="newUser.name" class="input" placeholder="eg.John Smith">
+                                        <input type="text" required v-model="newUser.name" class="input" placeholder="eg. John Smith">
                                     </div>
                                 </div>
                                 <div class="field">
@@ -223,7 +223,7 @@
                                         </div>
                                 </div>
                                 <div class="field">
-                                    <input type="submit" class="button is-fullwidth is-success" value="Register & Export Key">
+                                    <button type="submit" class="button is-fullwidth is-success">Register & Export Key</button>
                                         <!-- <  class="button is-fullwidth is-success"></a> -->
                                 </div>           
                             </form>
