@@ -41,7 +41,7 @@
                                     Manage Keys
                                     </div>
                                 </a>
-                                <a class="navbar-item" @click="unvalidatedJSON=''">
+                                <a class="navbar-item" @click="signOut">
                                     <div>
                                     Sign Out
                                     </div>
@@ -282,23 +282,49 @@
         </section>
     </div>
 
-
+    <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encryption.js"></script>
     <script>
+            let GENERAL = new PouchDB('generaldata');
+
+            const DATA = {
+                current: 'status',
+                unvalidatedJSON: '',
+                newUser:{
+                    publicKey: '',
+                    privateKey: '',
+                    name: '',
+                    email: ''
+                },
+                ipAddress: ''
+            };
+
+            // Check if pouch contains already logged in user
+            GENERAL.get('user').then(function (usrdata) {
+                DATA.unvalidatedJSON = usrdata.data;
+            }, function (err) {});
+
+            function saveUser () {
+                GENERAL.get('user').then(doc => {
+                    doc.data = DATA.unvalidatedJSON;
+                    return GENERAL.put(doc);
+                }).then(function () {
+                    // console.log('saved user');
+                }).catch(e => {
+                    if (e.status === 404) {
+                        GENERAL.put({
+                            data: DATA.unvalidatedJSON,
+                            _id: 'user'
+                        });
+                    }
+                    console.log(e);
+                });
+            };
+
             var main = new Vue({
                 el: '#app',
-                data: {
-                    current: 'status',
-                    unvalidatedJSON: '',
-                    newUser:{
-                        publicKey: '',
-                        privateKey: '',
-                        name: '',
-                        email: ''
-                    },
-                    ipAddress: ''
-                },
+                data: DATA,
                 created() {
                         //compatibility for firefox and chrome
                         var myPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
@@ -365,7 +391,6 @@
                             publicKey: this.newUser.publicKey,
                             privateKey: this.newUser.privateKey
                         }
-                        console.log(JSON.stringify(data));
                         function downloadObjectAsJson(exportObj, exportName){
                             var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
                             var downloadAnchorNode = document.createElement('a');
@@ -375,15 +400,30 @@
                             downloadAnchorNode.click();
                             downloadAnchorNode.remove();
                           }                        
-                        downloadObjectAsJson(data, 'user')
+                        downloadObjectAsJson(data, 'user');
+                        // Set the current user
+                        DATA.unvalidatedJSON = JSON.stringify(data);
+                        // Save user to db
+                        saveUser();
+                        // Close modal
+                        document.querySelector('.modal.create-key').classList.remove('is-active')
                     },
 
                     loadTextFromFile(ev) {
                         const file = ev.target.files[0];
                         const reader = new FileReader();
-                        reader.onload = e => this.unvalidatedJSON = e.target.result;
+                        reader.onload = e => {
+                            this.unvalidatedJSON = e.target.result;
+                            // Save user to db
+                            saveUser();
+                        };
                         reader.readAsText(file);
-                      }
+                    },
+
+                    signOut () {
+                        this.unvalidatedJSON = "";
+                        saveUser();
+                    }
                 },
                 computed: {
                     currentUser () {
@@ -399,7 +439,7 @@
                         data = JSON.parse(val);
                         user = {}
                         var keys = Object.keys(data)
-                        if (keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('privateKey') > -1 && keys.indexOf('privateKey') > -1 && keys.length == 4)  {
+                        if (keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('privateKey') > -1 && keys.indexOf('privateKey') > -1)  {
                             window.crypto.subtle.importKey(
                             "jwk", 
                             data.privateKey, 
@@ -410,7 +450,7 @@
                             false, 
                             ['decrypt'])
                             .then(key => user.privateKey=key)
-                            .catch(console.log)
+                            .catch(console.log);
                             window.crypto.subtle.importKey(
                             "jwk", 
                             data.publicKey, 
@@ -421,13 +461,12 @@
                             false, 
                             ['encrypt'])
                             .then(key => user.publicKey=key)
-                            .catch(console.log)
+                            .catch(console.log);
                             user.name = data.name;
                             user.email = data.email;
-                            return user              
+                            return user;
                         }
                         else {
-                            
                             alert("Wrong file!")
                         }
                     },
