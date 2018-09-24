@@ -1,0 +1,17 @@
+Front End
+- Encryption and Decryption RSA
+- Encryption and Decryption AES
+- IPFS Client
+- Store Medblock on pouch
+- Register User on Network
+- Choose Network Menu
+
+Back End
+- couchdb init script
+    - Database init
+    - couchdb validation
+- Couchdb Replication tasks
+- IPFS Pinning tasks
+- (optional) Email verification
+
+
