@@ -283,10 +283,20 @@
     </div>
 
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
+    <script src="https://unpkg.com/ipfs/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encryption.js"></script>
     <script>
-            let GENERAL = new PouchDB('generaldata');
+            // Databases
+            const GENERAL = new PouchDB('generaldata');
+            // IPFS Node
+            const NODE = new Ipfs();
+
+            NODE.on('ready', async () => {
+                let version = await NODE.version();
+
+                console.log(version);
+            })
 
             const DATA = {
                 current: 'status',
