@@ -285,7 +285,7 @@
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
     <script src="https://unpkg.com/ipfs/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
-    <script src="assets/encryption.js"></script>
+    <script src="assets/encrypt.js"></script>
     <script>
             // Databases
             const GENERAL = new PouchDB('generaldata');
@@ -316,29 +316,35 @@
                 ipAddress: ''
             };
 
-            // Check if pouch contains already logged in user
-            GENERAL.get('user').then(function (usrdata) {
-                DATA.unvalidatedJSON = usrdata.data;
-            }, function (err) {});
+            // // Check if pouch contains already logged in user
+            // GENERAL.get('user').then(function (usrdata) {
+            //     DATA.unvalidatedJSON = usrdata.data;
+            // }, function (err) {});
 
-            function saveUser () {
-                if (validateUserJSON(DATA.unvalidatedJSON)) {
-                    GENERAL.get('user').then(doc => {
-                        doc.data = DATA.unvalidatedJSON;
-                        return GENERAL.put(doc);
-                    }).then(function () {
-                        // console.log('saved user');
-                    }).catch(e => {
-                        if (e.status === 404) {
-                            GENERAL.put({
-                                data: DATA.unvalidatedJSON,
-                                _id: 'user'
-                            });
-                        }
-                        console.log(e);
-                    });
-                }
-            };
+            // function saveUser () {
+            //     if (validateUserJSON(DATA.unvalidatedJSON)) {
+            //         GENERAL.get('user').then(doc => {
+            //             doc.data = JSON.stringify({
+            //                 name: main.currentUser.name,
+            //                 email: main.currentUser.email,
+            //                 publicKey: main.currentUser.publicKey,
+            //                 privateKey: main.currentUser.privateKey
+            //             });
+            //             return GENERAL.put(doc);
+            //         }).then(function () {
+            //             console.log('saved user');
+            //             GENERAL.get('user').then(doc => {console.log(doc);})
+            //         }).catch(e => {
+            //             if (e.status === 404) {
+            //                 GENERAL.put({
+            //                     data: DATA.unvalidatedJSON,
+            //                     _id: 'user'
+            //                 });
+            //             }
+            //             console.log(e);
+            //         });
+            //     }
+            // };
 
             function validateUserJSON (val) {
                 if (val.length === 0) {
@@ -346,7 +352,10 @@
                 }
                 let data = JSON.parse(val);
                 let keys = Object.keys(data);
-                if (!(keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('privateKey') > -1 && keys.indexOf('privateKey') > -1)) {
+                if (!(keys.indexOf('name') > -1 || keys.indexOf('email') > -1 || keys.indexOf('privateKey') > -1 || keys.indexOf('privateKey') > -1)) {
+                    return false;
+                }
+                if (data.name === "" || data.email === "" || data.privateKey === "" || data.publicKey === "") {
                     return false;
                 }
                 return true;
@@ -434,7 +443,7 @@
                         // Set the current user
                         DATA.unvalidatedJSON = JSON.stringify(data);
                         // Save user to db
-                        saveUser();
+                        // saveUser();
                         // Close modal
                         document.querySelector('.modal.create-key').classList.remove('is-active')
                     },
@@ -445,18 +454,24 @@
                         reader.onload = e => {
                             this.unvalidatedJSON = e.target.result;
                             // Save user to db
-                            saveUser();
+                            // saveUser();
                         };
                         reader.readAsText(file);
                     },
 
                     signOut () {
                         this.unvalidatedJSON = "";
-                        saveUser();
+                        this.currentUser = {
+                            name:'',
+                            email:'',
+                            publicKey:'',
+                            privateKey:''
+                        };
+                        // saveUser();
                     }
                 },
                 watch: {
-                    currentUser () {
+                    unvalidatedJSON () {
                         val = this.unvalidatedJSON;
                         if (val.length == 0) {
                             return {
@@ -493,10 +508,12 @@
                             .catch(console.log);
                             user.name = data.name;
                             user.email = data.email;
-                            return user;
+                            this.currentUser = user;
+                            this.unvalidatedJSON = "";
                         }
                         else {
                             alert("Wrong file!");
+                            this.unvalidatedJSON = "";
                         }
                     },
                 }
