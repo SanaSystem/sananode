@@ -166,17 +166,12 @@
                         </table>
                     </div>
                     <!-- Peers -->
-                    <!-- 
-                        - Load from NodeRegistration model
-                     -->
+                    <!-- Load from NodeRegistration model -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'peers')}">
                         <h1 class="title">Peers</h1>
                     </div>
                     <!-- Settings -->
-                    <!-- 
-                        - Select network
-
-                     -->
+                    <!-- Select network -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'settings')}">
                         <h1 class="title">Settings</h1>
                     </div>
@@ -288,15 +283,15 @@
     <script src="assets/encrypt.js"></script>
     <script>
             // Databases
-            const GENERAL = new PouchDB('generaldata');
+            //const GENERAL = new PouchDB('generaldata');
             // IPFS Node
-            const NODE = new Ipfs();
+            // const NODE = new Ipfs();
 
-            NODE.on('ready', async () => {
-                let version = await NODE.version();
+            // NODE.on('ready', async () => {
+            //     let version = await NODE.version();
 
-                console.log(version);
-            })
+            //     console.log(version);
+            // })
 
             const DATA = {
                 current: 'status',
@@ -402,25 +397,10 @@
                         };
                 },
                 methods: {
-                    generateKey () {
-                        window.crypto.subtle.generateKey(
-                            {
-                                name: "RSA-OAEP",
-                                modulusLength: 2048, //can be 1024, 2048, or 4096
-                                publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                                hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-                            },
-                            true, //whether the key is extractable (i.e. can be used in exportKey)
-                            ["encrypt", "decrypt"] //must be ["encrypt", "decrypt"] or ["wrapKey", "unwrapKey"]
-                        )
-                        .then(key => {
-                            window.crypto.subtle.exportKey("jwk",key.privateKey).then(privateKey=>this.newUser.privateKey = privateKey);
-                            console.log(key);
-                            window.crypto.subtle.exportKey("jwk",key.publicKey).then(publicKey=>this.newUser.publicKey = publicKey)
-                            })
-                        .catch(function(err){
-                            console.error(err);
-                        });				
+                    async generateKey () {
+                        let keys = await CRYPTO.newRSAKeys();
+                        this.newUser.privateKey = keys.privatekey;
+                        this.newUser.publicKey = keys.publickey;
                     },
 
                     handleSubmit () {
