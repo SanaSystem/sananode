@@ -166,17 +166,12 @@
                         </table>
                     </div>
                     <!-- Peers -->
-                    <!-- 
-                        - Load from NodeRegistration model
-                     -->
+                    <!-- Load from NodeRegistration model -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'peers')}">
                         <h1 class="title">Peers</h1>
                     </div>
                     <!-- Settings -->
-                    <!-- 
-                        - Select network
-
-                     -->
+                    <!-- Select network -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'settings')}">
                         <h1 class="title">Settings</h1>
                     </div>
@@ -283,10 +278,20 @@
     </div>
 
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
+    <script src="https://unpkg.com/ipfs/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
-    <script src="assets/encryption.js"></script>
+    <script src="assets/encrypt.js"></script>
     <script>
-            let GENERAL = new PouchDB('generaldata');
+            // Databases
+            //const GENERAL = new PouchDB('generaldata');
+            // IPFS Node
+            // const NODE = new Ipfs();
+
+            // NODE.on('ready', async () => {
+            //     let version = await NODE.version();
+
+            //     console.log(version);
+            // })
 
             const DATA = {
                 current: 'status',
@@ -297,29 +302,58 @@
                     name: '',
                     email: ''
                 },
+                currentUser: {
+                    publicKey: '',
+                    privateKey: '',
+                    name: '',
+                    email: ''
+                },
                 ipAddress: ''
             };
 
-            // Check if pouch contains already logged in user
-            GENERAL.get('user').then(function (usrdata) {
-                DATA.unvalidatedJSON = usrdata.data;
-            }, function (err) {});
+            // // Check if pouch contains already logged in user
+            // GENERAL.get('user').then(function (usrdata) {
+            //     DATA.unvalidatedJSON = usrdata.data;
+            // }, function (err) {});
 
-            function saveUser () {
-                GENERAL.get('user').then(doc => {
-                    doc.data = DATA.unvalidatedJSON;
-                    return GENERAL.put(doc);
-                }).then(function () {
-                    // console.log('saved user');
-                }).catch(e => {
-                    if (e.status === 404) {
-                        GENERAL.put({
-                            data: DATA.unvalidatedJSON,
-                            _id: 'user'
-                        });
-                    }
-                    console.log(e);
-                });
+            // function saveUser () {
+            //     if (validateUserJSON(DATA.unvalidatedJSON)) {
+            //         GENERAL.get('user').then(doc => {
+            //             doc.data = JSON.stringify({
+            //                 name: main.currentUser.name,
+            //                 email: main.currentUser.email,
+            //                 publicKey: main.currentUser.publicKey,
+            //                 privateKey: main.currentUser.privateKey
+            //             });
+            //             return GENERAL.put(doc);
+            //         }).then(function () {
+            //             console.log('saved user');
+            //             GENERAL.get('user').then(doc => {console.log(doc);})
+            //         }).catch(e => {
+            //             if (e.status === 404) {
+            //                 GENERAL.put({
+            //                     data: DATA.unvalidatedJSON,
+            //                     _id: 'user'
+            //                 });
+            //             }
+            //             console.log(e);
+            //         });
+            //     }
+            // };
+
+            function validateUserJSON (val) {
+                if (val.length === 0) {
+                    return true;
+                }
+                let data = JSON.parse(val);
+                let keys = Object.keys(data);
+                if (!(keys.indexOf('name') > -1 || keys.indexOf('email') > -1 || keys.indexOf('privateKey') > -1 || keys.indexOf('privateKey') > -1)) {
+                    return false;
+                }
+                if (data.name === "" || data.email === "" || data.privateKey === "" || data.publicKey === "") {
+                    return false;
+                }
+                return true;
             };
 
             var main = new Vue({
@@ -363,25 +397,10 @@
                         };
                 },
                 methods: {
-                    generateKey () {
-                        window.crypto.subtle.generateKey(
-                            {
-                                name: "RSA-OAEP",
-                                modulusLength: 2048, //can be 1024, 2048, or 4096
-                                publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-                                hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-                            },
-                            true, //whether the key is extractable (i.e. can be used in exportKey)
-                            ["encrypt", "decrypt"] //must be ["encrypt", "decrypt"] or ["wrapKey", "unwrapKey"]
-                        )
-                        .then(key => {
-                            window.crypto.subtle.exportKey("jwk",key.privateKey).then(privateKey=>this.newUser.privateKey = privateKey);
-                            console.log(key);
-                            window.crypto.subtle.exportKey("jwk",key.publicKey).then(publicKey=>this.newUser.publicKey = publicKey)
-                            })
-                        .catch(function(err){
-                            console.error(err);
-                        });				
+                    async generateKey () {
+                        let keys = await CRYPTO.newRSAKeys();
+                        this.newUser.privateKey = keys.privatekey;
+                        this.newUser.publicKey = keys.publickey;
                     },
 
                     handleSubmit () {
@@ -404,7 +423,7 @@
                         // Set the current user
                         DATA.unvalidatedJSON = JSON.stringify(data);
                         // Save user to db
-                        saveUser();
+                        // saveUser();
                         // Close modal
                         document.querySelector('.modal.create-key').classList.remove('is-active')
                     },
@@ -415,18 +434,24 @@
                         reader.onload = e => {
                             this.unvalidatedJSON = e.target.result;
                             // Save user to db
-                            saveUser();
+                            // saveUser();
                         };
                         reader.readAsText(file);
                     },
 
                     signOut () {
                         this.unvalidatedJSON = "";
-                        saveUser();
+                        this.currentUser = {
+                            name:'',
+                            email:'',
+                            publicKey:'',
+                            privateKey:''
+                        };
+                        // saveUser();
                     }
                 },
-                computed: {
-                    currentUser () {
+                watch: {
+                    unvalidatedJSON () {
                         val = this.unvalidatedJSON;
                         if (val.length == 0) {
                             return {
@@ -436,10 +461,9 @@
                                 privateKey:''
                             }
                         }
-                        data = JSON.parse(val);
                         user = {}
-                        var keys = Object.keys(data)
-                        if (keys.indexOf('name') > -1 && keys.indexOf('email') > -1 && keys.indexOf('privateKey') > -1 && keys.indexOf('privateKey') > -1)  {
+                        if (validateUserJSON(val))  {
+                            data = JSON.parse(val);
                             window.crypto.subtle.importKey(
                             "jwk", 
                             data.privateKey, 
@@ -464,10 +488,12 @@
                             .catch(console.log);
                             user.name = data.name;
                             user.email = data.email;
-                            return user;
+                            this.currentUser = user;
+                            this.unvalidatedJSON = "";
                         }
                         else {
-                            alert("Wrong file!")
+                            alert("Wrong file!");
+                            this.unvalidatedJSON = "";
                         }
                     },
                 }
