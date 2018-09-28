@@ -5,6 +5,7 @@ certifi==2018.4.16
 chardet==3.0.4
 Django==2.0.5
 djangorestframework==3.8.2
+django-cors-headers==2.4.0
 idna==2.7
 ipfsapi==0.4.3
 kombu==4.2.1

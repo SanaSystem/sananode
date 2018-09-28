@@ -16,6 +16,9 @@ services:
     environment:
     - COUCHDB_USER=admin 
     - COUCHDB_PASSWORD=admin
+    volumes:
+      - couchdb-data:/opt/couchdb/data
+      - ./couchconfig:/opt/couchdb/etc/local.d
   worker:
     build: .
     command: celery -A tasks worker --loglevel=info
@@ -34,3 +37,5 @@ services:
     depends_on:
       - worker
       - db
+volumes:
+  couchdb-data:
