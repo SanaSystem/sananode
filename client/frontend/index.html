@@ -191,7 +191,7 @@
                     <div class="modal-content">
                         <div class="box">
                             <h1 class="title is-size-4 has-text-centered">Create Key</h1>
-                            <form action="" @submit.prevent="handleSubmit">
+                            <form action="" @submit.prevent="handleUserSubmit">
                                 <div class="field">
                                     <label for="" class="label">Name</label>
                                     <div class="control">
@@ -232,16 +232,31 @@
                     <div class="modal-content">
                         <div class="box">
                             <h1 class="title is-size-4 has-text-centered">New Record</h1>
-                                <form>
+                                <form action="" @submit.prevent="handleRecordSubmit">
                                         <div class="field">
                                           <div class="field">
                                             <label class="label">Recipient</label>
-                                            <div class="control">
+                                            <div class="control has-icons-right" :class="{'is-loading': formData.uploadRecords.recipientValid === 1}">
                                               <input class="input" type="text" placeholder="e.g. tornadoalert@gmail.com" required>
+                                              <span class="icon is-small is-right" :class="{'is-hidden': formData.uploadRecords.recipientValid !== 2}">
+                                                <i class="fas fa-check"></i>
+                                              </span>
                                             </div>
                                           </div>
+                                          <!-- <div class="field is-grouped is-grouped-multiline" :class="{'is-hidden': formData.uploadRecords.recipient === ''}">
+                                                <div class="control">
+                                                    <div class="tags has-addons">
+                                                        <span class="tag"></span>
+                                                        <a class="tag is-delete"></a>
+                                                    </div>
+                                                </div>
+                                          </div> -->
                                         </div>
                                         <div class="field">
+                                            <label for="" class="label">Title</label>
+                                            <input v-model="formData.uploadRecords.title" class="input" type="text" placeholder="Enter the Medblock Title" required>
+                                        </div>
+    <!--                                     <div class="field">
                                             <label for="" class="label">Format</label>
                                             <div class="control">
                                                 <div class="select is-fullwidth">
@@ -255,15 +270,44 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div> -->
                                         <div class="field">
                                                 <div class="field">
-                                                  <label class="label">Data</label>
+                                                  <label class="label">Files</label>
                                                   <div class="control">
-                                                    <textarea class="textarea" placeholder="All text data goes here..."></textarea>
+                                                    <table class="table is-fullwidth">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>File name</th>
+                                                                <th class="is-narrow"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr v-for="item in formData.uploadRecords.files">
+                                                                <td>{{item.file.name}}</td>
+                                                                <td>
+                                                                    <a class="button is-text" @click="handleRecordDelete(item)">
+                                                                        <span class="icon is-small">
+                                                                            <i class="fas fa-trash"></i>
+                                                                        </span>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td colspan="2">
+                                                                    <a class="button is-fullwidth is-text" @click="handleRecordAdd">
+                                                                        <span class="icon is-small">
+                                                                            <i class="fas fa-upload"></i>
+                                                                        </span>
+                                                                        <span>Upload New Files</span>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
                                                   </div>
                                                 </div>
-                                              </div>
+                                        </div>
                                         <div class="field">
                                             <button class="button is-fullwidth is-success">Submit</button>
                                         </div>
@@ -277,8 +321,9 @@
         </section>
     </div>
 
+    <script src="assets/lib/buffer.js"></script>
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
-    <script src="https://unpkg.com/ipfs/dist/index.min.js"></script>
+    <script src="https://unpkg.com/ipfs-api/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encrypt.js"></script>
     <script src="assets/database.js"></script>
