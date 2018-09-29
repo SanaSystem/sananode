@@ -134,6 +134,22 @@
 				throw e;
 			}
 		},
+		async encryptAESBuffer (buff, key) {
+			try {
+				let iv = crypto.getRandomValues(new Uint8Array(16));
+				let arr = await crypto.subtle.encrypt({
+					name: 'AES-CBC',
+					iv: iv
+				}, key, buff);
+				return {
+					enarr: arr,
+					iv: Array.from(iv)
+				};
+			}
+			catch (e) {
+				throw e;
+			}
+		},
 		async decryptAESString ({enstr: enstr, iv: iv}, key) {
 			try {
 				let arr = await crypto.subtle.decrypt({
@@ -142,6 +158,18 @@
 				}, key, stringToArrayBuffer(enstr));
 				let str = arrayBufferToString(arr);
 				return str;
+			}
+			catch (e) {
+				throw e;
+			}
+		},
+		async decryptAESBuffer ({enarr: enarr, iv: iv}, key) {
+			try {
+				let arr = await crypto.subtle.decrypt({
+					name: 'AES-CBC',
+					iv: Uint8Array.from(iv)
+				}, key, enarr);
+				return arr;
 			}
 			catch (e) {
 				throw e;
