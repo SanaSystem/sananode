@@ -9,6 +9,7 @@ django-cors-headers==2.4.0
 idna==2.7
 ipfsapi==0.4.3
 kombu==4.2.1
+pyaml==17.12.1
 pytz==2018.5
 redis==2.10.6
 requests==2.19.1
