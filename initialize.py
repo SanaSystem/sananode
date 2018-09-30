@@ -2,7 +2,7 @@ import yaml, json
 import requests
 import time
 import subprocess
-import os
+import os, sys
 banner = """
   ____    _    _   _    _      _   _  ___  ____  _____   _          _        
  / ___|  / \  | \ | |  / \    | \ | |/ _ \|  _ \| ____| | |__   ___| |_ __ _ 
@@ -11,6 +11,13 @@ banner = """
  |____/_/   \_\_| \_/_/   \_\ |_| \_|\___/|____/|_____| |_.__/ \___|\__\__,_|
                                                                              
 """
+
+def command(sequence):
+    if sys.platform == 'linux':
+        return ' '.join(sequence)
+    else:
+        return sequence
+
 def load_config():
     with open("config.json","r") as f:
         config = json.load(f)
@@ -85,14 +92,14 @@ def main():
     print("[+] Attempting to write docker-compose.yaml")
     write_docker_compose(docker_compose_yaml)
     print("[+] Building docker containers")
-    subprocess.call(["docker-compose","build"], shell=True)
+    subprocess.call(command(["docker-compose","build"]), shell=True)
     print("[+] Running 'docker-compose up' as a child process. If this is the first time this may take a long time...")
-    subprocess.Popen(["docker-compose", "up"], shell=True)
+    subprocess.Popen(command(["docker-compose", "up"]), shell=True)
 
     wait_for_couch_container()
     print("[+] Running migrations for Django")
-    subprocess.call(["docker-compose", "exec", "web", "python", "manage.py", "makemigrations"], shell=True)
-    subprocess.call(["docker-compose", "exec", "web", "python", "manage.py", "migrate"], shell=True)
+    subprocess.call(command(["docker-compose", "exec", "web", "python", "manage.py", "makemigrations"]), shell=True)
+    subprocess.call(command(["docker-compose", "exec", "web", "python", "manage.py", "migrate"]), shell=True)
     
     print("[+] Initializing couchDB databases")
     try:
@@ -101,7 +108,7 @@ def main():
         print("[-] Error: {}".format(e))
 
     print("[+] Destroying containers")
-    subprocess.call(["docker-compose", "down"], shell=True)
+    subprocess.call(command(["docker-compose", "down"]), shell=True)
 
     # Create medblock database
     # create _users database
