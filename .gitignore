@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 couchconfig/enableCors.ini
 couchconfig/docker.ini
+docker-compose.yml
