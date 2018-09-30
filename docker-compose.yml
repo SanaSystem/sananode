@@ -2,13 +2,15 @@ version: '3'
 
 services:
   ipfs:
-    image: jbenet/go-ipfs
-  rabbit:
-    image: rabbitmq:alpine
-  redis:
-    image: redis
-  db:
-    image: postgres
+    image: tornadoalert/go-ipfs-cors
+    ports:
+    - "5001:5001"
+    volumes:
+    - ipfs-data:/data/ipfs
+  # rabbit:
+  #   image: rabbitmq:alpine
+  # redis:
+  #   image: redis
   couchdb:
     image: couchdb
     ports:
@@ -18,15 +20,16 @@ services:
     - COUCHDB_PASSWORD=admin
     volumes:
       - couchdb-data:/opt/couchdb/data
-      - ./couchconfig:/opt/couchdb/etc/local.d
-  worker:
-    build: .
-    command: celery -A tasks worker --loglevel=info
-    volumes:
-      - .:/code/
-    depends_on:
-      - rabbit
-      - redis
+      # - ./couchconfig:/opt/couchdb/etc/local.d
+      - ./config/enableCors.ini:/opt/couchdb/etc/local.ini
+  # worker:
+  #   build: .
+  #   command: celery -A tasks worker --loglevel=info
+  #   volumes:
+  #     - .:/code/
+  #   depends_on:
+  #     - rabbit
+  #     - redis
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
@@ -34,8 +37,9 @@ services:
       - .:/code/
     ports:
       - 8000:8000
-    depends_on:
-      - worker
-      - db
+    # depends_on:
+    #   # - worker
+    #   # - db
 volumes:
   couchdb-data:
+  ipfs-data:

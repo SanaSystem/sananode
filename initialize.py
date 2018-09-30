@@ -71,6 +71,7 @@ wait_for_couch_container()
 
 print("[+] Destroying containers")
 subprocess.Popen(["docker-compose", "down"], shell=True)
+
 # Create medblock database
 # create _users database
 # Write Validation documents for medblock
@@ -80,3 +81,23 @@ subprocess.Popen(["docker-compose", "down"], shell=True)
 # Post the ip address on the Django databases (network URL)
 
 
+
+
+couchdb = "http://{}:{}@127.0.0.1/8001".format(couch_username, couch_password)
+
+
+def create_users():
+    return requests.put(couchdb + "_users")
+
+def create_medblocks():
+    return requests.put(couchdb + "medblocks")
+
+def create_valitate_medblock():
+    validate_medblock = {
+    '_id': '_design/validate_medblocks',
+    'validate_doc_update': 'function (newDoc, savedDoc, userCtx) {\nfunction require(field, message) {\nmessage = message || "Document must have a " + field;\nif (!newDoc[field]) throw({forbidden : message});\n};\nif (newDoc.type == "medblock") {\nrequire("format");\nrequire("files");\nrequire("keys");\nrequire("user");\n}\n}\n'
+    }
+    return requests.put(couchdb + "medblocks/_design/validate_medblocks", json=validate_medblock)
+
+def make_fields_public(field):
+    return requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json=field)
