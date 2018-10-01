@@ -79,6 +79,20 @@
 				throw e;
 			}
 		},
+		async importRSAPublicKey (propublickey) {
+			try {
+				let publickey = await crypto.subtle.importKey("jwk", propublickey, {
+					name: "RSA-OAEP",
+					hash: {
+						name: "SHA-256"
+					}
+				}, true, ['encrypt']);
+				return publickey;
+			}
+			catch (e) {
+				throw e;
+			};
+		},
 		async exportRSAKey (prokey) {
 			let key = await window.crypto.subtle.exportKey("jwk", prokey);
 			return key;
