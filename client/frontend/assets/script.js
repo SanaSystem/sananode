@@ -280,7 +280,8 @@ var main = new Vue({
                     creator: Encrypt.exportRSAKey(this.currentUser.publicKey),
                     user: {}
                 };
-                
+                // Post to database
+                Database.postNewMedblock(medblockobj);
                 // Cleanup
                 document.querySelector('#newRecord').classList.remove('is-active');
                 document.querySelector('#uploadRecords-submit').classList.remove('is-loading');

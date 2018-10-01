@@ -23,7 +23,6 @@
 				recursive: true,
 				pin: true
 			});
-			console.log(res);
 			return res;
 		},
 		async getFile (hash, path) {

@@ -82,11 +82,17 @@
 				throw e;
 			}
 		},
-		async postMedblock (medblock) {
+		async postNewMedblock (medblock) {
 			let uuid = await axios.get(porturl(8001) + '/_uuids?count=1');
-			uuid = uuid.data;
-			// COMBAK
+			uuid = uuid.data.uuids;
 			medblock._id = uuid[0];
+			console.log(medblock);
+			try {
+				await MEDBLOCK.put(medblock);
+			}
+			catch (e) {
+				throw e;
+			}
 		}
 	};
 
