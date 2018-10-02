@@ -57,7 +57,7 @@
                                         <a class="button" onclick="document.querySelector('#hiddenFileElement').click()"><span>Import Key</span></a>
                                     </p>
                                     <p class="control">
-                                        <a class="button is-primary" onclick="document.querySelector('.modal.create-key').classList.add('is-active')"><span>Create Key</span></a>
+                                        <a class="button is-primary" onclick="document.querySelector('#createKey').classList.add('is-active')"><span>Create Key</span></a>
                                     </p>
                                 </div>
                             </div>
@@ -119,7 +119,7 @@
                                 </div>
                             
                                 <p class="level-item">
-                                <a class="button is-success" onclick="document.querySelector('.modal.new-record').classList.add('is-active')">New</a>
+                                <a class="button is-success" onclick="document.querySelector('#newRecord').classList.add('is-active')">New</a>
                                 </p> 
                             </div>
                             <div class="level-right">
@@ -186,7 +186,7 @@
 
                 </div>
                 <!-- Create Key  -->
-                <div class="modal create-key">
+                <div id="createKey" class="modal">
                     <div class="modal-background"></div>
                     <div class="modal-content">
                         <div class="box">
@@ -195,13 +195,13 @@
                                 <div class="field">
                                     <label for="" class="label">Name</label>
                                     <div class="control">
-                                        <input type="text" required v-model="newUser.name" class="input" placeholder="eg.John Smith">
+                                        <input type="text" required v-model="formData.newUser.name" class="input" placeholder="eg.John Smith">
                                     </div>
                                 </div>
                                 <div class="field">
                                     <label for="" class="label">Email</label>
                                     <div class="control">
-                                        <input type="email" required v-model="newUser.email" class="input" placeholder="eg. yourname@domain.com">
+                                        <input type="email" required v-model="formData.newUser.email" class="input" placeholder="eg. yourname@domain.com">
                                     </div>
                                 </div>
                                 <div class="field">
@@ -209,7 +209,7 @@
                                 </div>
                                 <div class="field has-addons">
                                         <div class="control is-expanded">
-                                          <input required class="input" v-model="newUser.privateKey.d" type="text" placeholder="Click on Genarate to get a random key">
+                                          <input required class="input" v-model="formData.newUser.privateKey.d" type="text" placeholder="Click on Genarate to get a random key">
                                         </div>
                                         <div class="control">   
                                           <a class="button" v-on:click="generateKey">
@@ -224,10 +224,10 @@
                             </form>
                         </div>
                     </div>
-                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal.create-key').classList.remove('is-active')"></button>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('#createKey').classList.remove('is-active')"></button>
                 </div>
                 <!-- New Record -->
-                <div class="modal new-record">
+                <div id="newRecord" class="modal">
                     <div class="modal-background"></div>
                     <div class="modal-content">
                         <div class="box">
@@ -237,20 +237,15 @@
                                           <div class="field">
                                             <label class="label">Recipient</label>
                                             <div class="control has-icons-right" :class="{'is-loading': formData.uploadRecords.recipientValid === 1}">
-                                              <input class="input" type="text" placeholder="e.g. tornadoalert@gmail.com" required>
+                                              <input v-model="formData.uploadRecords.recipient" class="input" type="text" placeholder="e.g. tornadoalert@gmail.com" required @keyUp="handleRecordRecpientChange">
                                               <span class="icon is-small is-right" :class="{'is-hidden': formData.uploadRecords.recipientValid !== 2}">
                                                 <i class="fas fa-check"></i>
                                               </span>
+                                              <span class="icon is-small is-right" :class="{'is-hidden': formData.uploadRecords.recipientValid !== -1}">
+                                                <i class="fas fa-times"></i>
+                                              </span>
                                             </div>
                                           </div>
-                                          <!-- <div class="field is-grouped is-grouped-multiline" :class="{'is-hidden': formData.uploadRecords.recipient === ''}">
-                                                <div class="control">
-                                                    <div class="tags has-addons">
-                                                        <span class="tag"></span>
-                                                        <a class="tag is-delete"></a>
-                                                    </div>
-                                                </div>
-                                          </div> -->
                                         </div>
                                         <div class="field">
                                             <label for="" class="label">Title</label>
@@ -284,7 +279,7 @@
                                                         </thead>
                                                         <tbody>
                                                             <tr v-for="item in formData.uploadRecords.files">
-                                                                <td>{{item.file.name}}</td>
+                                                                <td>{{item.name}}</td>
                                                                 <td>
                                                                     <a class="button is-text" @click="handleRecordDelete(item)">
                                                                         <span class="icon is-small">
@@ -309,24 +304,27 @@
                                                 </div>
                                         </div>
                                         <div class="field">
-                                            <button class="button is-fullwidth is-success">Submit</button>
+                                            <button id="uploadRecords-submit" class="button is-fullwidth is-success">Submit</button>
                                         </div>
                                       </form>
                         </div>
                             
                     </div>
-                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('.modal.new-record').classList.remove('is-active')"></button>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('#newRecord').classList.remove('is-active')"></button>
                 </div>
             </div>
         </section>
     </div>
 
+    <script src="assets/utils.js"></script>
     <script src="assets/lib/buffer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
     <script src="https://unpkg.com/ipfs-api/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encrypt.js"></script>
     <script src="assets/database.js"></script>
+    <script src="assets/ipfs.js"></script>
     <script src="assets/script.js"></script>
 
 </body>

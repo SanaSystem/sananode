@@ -9,12 +9,6 @@
 
 const DATA = {
     current: 'records',
-    newUser: {
-        publicKey: '',
-        privateKey: '',
-        name: '',
-        email: ''
-    },
     currentUser: {
         publicKey: '',
         privateKey: '',
@@ -25,6 +19,12 @@ const DATA = {
     },
     ipAddress: '',
     formData: {
+        newUser: {
+            publicKey: '',
+            privateKey: '',
+            name: '',
+            email: ''
+        },
         uploadRecords: {
             recipient: '',
             recipientValid: 0,
@@ -63,14 +63,14 @@ async function setUser (userjson) {
     else {
         name = prouser.name;
     }
-    if (prouser.email === "") {
+    if (prouser.email === "" && Database.searchUsersByEmail(prouser.email) === undefined) {
         flag = false;
     }
     else {
         email = prouser.email;
     }
     // Check flag
-    if (flag) {
+    if (flag === true) {
         // Set current user
         DATA.currentUser.publicKey = keys.publicKey;
         DATA.currentUser.privateKey = keys.privateKey;
@@ -78,13 +78,13 @@ async function setUser (userjson) {
         DATA.currentUser.email = email;
         // Set currentuser to true
         DATA.currentUser.user = true;
-        DATA.currentUser.saved = false;
         // Save
         let currentuserstr = await stringifyCurrentUser();
         Database.setUser(currentuserstr);
     }
     else {
         if (prouser.saved === false) {
+            // TODO Notification for Unser Invalid.
             window.alert("User is invalid.");
         }
     }
@@ -97,7 +97,6 @@ async function clearUser () {
     DATA.currentUser.email = '';
     // Set user to false
     DATA.currentUser.user = false;
-    DATA.currentUser.saved = true;
     // Save
     let currentuserstr = await stringifyCurrentUser();
     Database.setUser(currentuserstr);
@@ -125,7 +124,7 @@ function getFiles () {
             inputNode.remove();
             res(files);
         });
-        // FIXME - Remove InputNode on cancle event from file
+        // FIXME - Remove InputNode on cancel event from file
         // Fire the file input
         inputNode.click();
     });
@@ -182,46 +181,123 @@ var main = new Vue({
         // ReWrite
         async generateKey () {
             let keys = await Encrypt.newRSAKeys();
-            this.newUser.privateKey = keys.privateKey;
-            this.newUser.publicKey = keys.publicKey;
+            this.formData.newUser.privateKey = keys.privateKey;
+            this.formData.newUser.publicKey = keys.publicKey;
         },
-        handleUserSubmit () {         
-            downloadObjectAsJson(this.newUser, 'user');
-            setUser(JSON.stringify(this.newUser));
+        handleUserSubmit () {
+            // POST To Server
+            axios.post(porturl(8000) + '/users/', {
+                name: this.formData.newUser.name,
+                email: this.formData.newUser.email,
+                publicKey: JSON.stringify(this.formData.newUser.publicKey)
+            })
+            .then(function (res) {
+                if (res.status === 201) {
+                    // Download as JSON
+                    downloadObjectAsJson(this.formData.newUser, 'user');
+                    // Set current user
+                    setUser(JSON.stringify(this.formData.newUser));
+                }
+            })
+            .catch(function (err) {
+                // TODO Show notification error
+                console.log(err);
+            });
             // Close modal
-            document.querySelector('.modal.create-key').classList.remove('is-active')
+            document.querySelector('#createKey').classList.remove('is-active');
         },
         async handleRecordSubmit () {
-            // Validation TODO
-            // Check if recipient is valid & get RSA Key TODO
-            // Convert Files Array to hold file data too
-            let files = await createFileTree(this.formData.uploadRecords.files.map(f => f.file));
-            // Get an AES Key
-            let proAESkey = await Encrypt.newAESKey();
-            let AESkey = await Encrypt.importAESKey(proAESkey);
-            // Encrypt each file with AES and get IVs
-            let encryptedfiles = await encryptFileTree(files, AESkey);
-                                // // Test decryption
-                                // let file_0 = encryptedfiles[0];
-                                // let defile = await Encrypt.decryptAESBuffer({enarr: file_0.data, iv: file_0.iv}, AESkey);
-                                // let decoder = new TextDecoder();
-                                // let contents = decoder.decode(defile);
-                                // console.log(contents);
-            console.log(encryptedfiles);
-            // Store Encrypted file on IPFS and get IPFS Hash // COMBAK
-            
-            // Encrypt AES key with RSA
-            // Create Medblock object
+            document.querySelector('#uploadRecords-submit').classList.add('is-loading');
+            document.querySelector('#uploadRecords-submit').setAttribute('disabled', 'true');
+            // Validation
+            if (await (async () => {
+                // Check current user
+                let currentUser = this.currentUser.user && this.currentUser.publicKey;
+                if (currentUser === false) {
+                    return false;
+                }
+                // Check user
+                let user = await Database.searchUsersByEmail(this.formData.uploadRecords.recipient);
+                if (user === undefined) {
+                    return false;
+                }
+                // Check Title
+                if (!/^(\w|\d)+/.test(this.formData.uploadRecords.title)) {
+                    return false;
+                }
+                // Check length of files > 0
+                if (this.formData.uploadRecords.files.length === 0) {
+                    return false;
+                }
+                return true;
+            })()) {
+                // Get title of medblock
+                let title = this.formData.uploadRecords.title;
+                // Get recipient is valid & get RSA Key
+                let user = await Database.searchUsersByEmail(this.formData.uploadRecords.recipient);
+                // Convert Files Array to hold file data too
+                let files = await createFileTree(this.formData.uploadRecords.files);
+                // Get an AES Key
+                let proAESkey = await Encrypt.newAESKey();
+                let AESkey = await Encrypt.importAESKey(proAESkey);
+                // Encrypt each file with AES and get IVs
+                let encryptedfiles = await encryptFileTree(files, AESkey);
+                // // Test decryption
+                // let file_0 = encryptedfiles[0];
+                // let defile = await Encrypt.decryptAESBuffer({enarr: file_0.data, iv: file_0.iv}, AESkey);
+                // let decoder = new TextDecoder();
+                // let contents = decoder.decode(defile);
+                // console.log(contents);
+                // console.log(encryptedfiles);
+                // Store Encrypted file on IPFS and get IPFS Hash COMBAK
+                let ipfsfiles = encryptedfiles.map(f => {
+                    return {
+                        path: '/' + f.name,
+                        content: f.data
+                    };
+                });
+                let ipfsHashes = await IPFSUtils.putFile(ipfsfiles);
+                // map ipfsHashes to their files
+                encryptedfiles.forEach((f, index) => {
+                    delete f.data;
+                    f.hash = ipfsHashes[index].hash;
+                });
+                // Encrypt AES key with RSA
+                let recipientKey = await Encrypt.importRSAPublicKey(user.publicKey);
+                let enAESkey = await Encrypt.encryptRSAString(proAESkey, recipientKey);
+                // console.log(proAESkey, enAESkey);
+                // Create Medblock object TODO
+                let medblockobj = {
+                    title: title,
+                    files: encryptedfiles,
+                    keys: [
+                        {
+                            RSAPublicKey: user.publicKey,
+                            encryptedAESKey: enAESkey
+                        }
+                    ],
+                    format: 'MEDBLOCK_01',
+                    creator: Encrypt.exportRSAKey(this.currentUser.publicKey),
+                    user: {}
+                };
+                // Post to database
+                Database.postNewMedblock(medblockobj);
+                // Cleanup
+                document.querySelector('#newRecord').classList.remove('is-active');
+                document.querySelector('#uploadRecords-submit').classList.remove('is-loading');
+                document.querySelector('#uploadRecords-submit').removeAttribute('disabled');
+            }
+            else {
+                // TODO Show notification error
+                console.log("error");
+                document.querySelector('#uploadRecords-submit').classList.remove('is-loading');
+                document.querySelector('#uploadRecords-submit').removeAttribute('disabled');
+            }
         },
         async handleRecordAdd () {
             // Get files
             let files = await getFiles();
-            let filesarr = Array.from(files).map(file => {
-                return {
-                    file: file,
-                    status: 'Not Uploaded'
-                };
-            });
+            let filesarr = Array.from(files).map(file => file);
             this.formData.uploadRecords.files.splice(this.formData.uploadRecords.files.length, 0, ...filesarr);
             // let samplefile = filesarr[0];
             // const reader = new FileReader();
@@ -232,6 +308,22 @@ var main = new Vue({
         },
         handleRecordDelete (item) {
             this.formData.uploadRecords.files.splice(this.formData.uploadRecords.files.indexOf(item), 1);
+        },
+        async handleRecordRecpientChange () {
+            // change recipient state to loading
+            this.formData.uploadRecords.recipientValid = 1;
+            // search users
+            let recipient = await Database.searchUsersByEmail(this.formData.uploadRecords.recipient);
+            if (recipient === undefined) {
+                this.formData.uploadRecords.recipientValid = -1;
+            }
+            else {
+                this.formData.uploadRecords.recipientValid = 2;
+            }
+            // Check if field is empty
+            if (this.formData.uploadRecords.recipient === '') {
+                this.formData.uploadRecords.recipientValid = 0;
+            }
         },
         // ReWrite
         loadTextFromFile(ev) {
