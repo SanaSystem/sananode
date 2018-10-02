@@ -32,7 +32,7 @@ def wait_for_couch_container():
     attempt = 1
     while True:
         try:
-            if requests.get("http://127.0.0.1:8001/").status_code == 200:
+            if requests.get("http://127.0.0.1:5984/").status_code == 200:
                 print("[+] Successfully got CouchDB container!")
                 return True
             else:
@@ -56,7 +56,7 @@ def write_docker_compose(yaml_data):
         f.write(yaml.dump(yaml_data))
 
 def initializa_couchdb(couch_username, couch_password):
-    couchdb = "http://{}:{}@127.0.0.1:8001/".format(couch_username, couch_password)
+    couchdb = "http://{}:{}@127.0.0.1:5984/".format(couch_username, couch_password)
     print("[+] Creating _users database")
     print(requests.put(couchdb + "_users").json())
     print("[+] Creating medblocks database")
@@ -72,10 +72,10 @@ def initializa_couchdb(couch_username, couch_password):
         'validate_doc_update': "function(newDoc, oldDoc, userCtx){\r\nif (newDoc.user !== userCtx.name){\r\nthrow({forbidden : \"doc.user must be the same as your username.\"});\r\n}\r\nif (oldDoc){\r\nif (oldDoc.user !== userCtx.name){\r\nthrow({forbidden: 'doc.user not authorized to modify.'});\r\n}\r\n}\r\n}\r\n"
     }
     requests.put(couchdb + "medblocks/_design/only_user", json=authenticate_only_user)
-    print("[+] Making email user field public")
-    requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json="email")
+    print("[+] Making publicKey and user field public")
+    r = requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json="name, publicKey")
+    print(r.json())
     print("[+] Making rsa user field public")
-    requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json="rsa")
     print("Testing initialization...")
     dbs = requests.get(couchdb + "_all_dbs").json()
     assert(len(dbs) == 2, "More than two databases found!")
