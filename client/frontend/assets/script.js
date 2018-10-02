@@ -23,7 +23,8 @@ const DATA = {
             publicKey: '',
             privateKey: '',
             name: '',
-            email: ''
+            email: '',
+            password: ''
         },
         uploadRecords: {
             recipient: '',
@@ -50,7 +51,7 @@ async function setUser (userjson) {
     let prouser = JSON.parse(userjson);
     // Validate JSON TODO
     let flag = true;
-    let keys, name, email;
+    let keys, name, email, password;
     if (prouser.privateKey === "" && prouser.publicKey === "") {
         flag = false;
     }
@@ -69,24 +70,42 @@ async function setUser (userjson) {
     else {
         email = prouser.email;
     }
+    if (prouser.email !== "") {
+        password = prompt('You are currently logged in as ' + email + '. Please confirm your password.');
+        if (password === null) {
+            flag = false;
+        }
+    }
     // Check flag
     if (flag === true) {
-        // Set current user
-        DATA.currentUser.publicKey = keys.publicKey;
-        DATA.currentUser.privateKey = keys.privateKey;
-        DATA.currentUser.name = name;
-        DATA.currentUser.email = email;
-        // Set currentuser to true
-        DATA.currentUser.user = true;
-        // Save
-        let currentuserstr = await stringifyCurrentUser();
-        Database.setUser(currentuserstr);
+        try {
+            // Login to couch db
+            let response = await Database.signIn(email, password);
+            if (response === true) {
+                 // Set current user
+                DATA.currentUser.publicKey = keys.publicKey;
+                DATA.currentUser.privateKey = keys.privateKey;
+                DATA.currentUser.name = name;
+                DATA.currentUser.email = email;
+                // Set currentuser to true
+                DATA.currentUser.user = true;
+                // Save
+                let currentuserstr = await stringifyCurrentUser();
+                Database.setUser(currentuserstr);
+            }
+        }
+        catch (e) {
+            throw e;
+            // TODO Notification
+        }
     }
     else {
         if (prouser.saved === false) {
-            // TODO Notification for Unser Invalid.
+            // TODO Notification for User Invalid.
             window.alert("User is invalid.");
         }
+        // Clear any current user
+        clearUser();
     }
 };
 async function clearUser () {
@@ -102,7 +121,7 @@ async function clearUser () {
     Database.setUser(currentuserstr);
 };
 function downloadObjectAsJson(exportObj, exportName){
-    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, ['publicKey', 'privateKey', 'name', 'email']));
     var downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", exportName + ".json");
@@ -185,23 +204,21 @@ var main = new Vue({
             this.formData.newUser.publicKey = keys.publicKey;
         },
         handleUserSubmit () {
-            // POST To Server
-            axios.post(porturl(8000) + '/users/', {
-                name: this.formData.newUser.name,
-                email: this.formData.newUser.email,
-                publicKey: JSON.stringify(this.formData.newUser.publicKey)
+            // Sign up user to CouchDB
+            Database.signUp(this.formData.newUser.email, this.formData.newUser.password, {
+                username: this.formData.newUser.name,
+                publicKey: this.formData.newUser.publicKey
             })
-            .then(function (res) {
-                if (res.status === 201) {
+            .then((sucess) => {
+                if (sucess) {
                     // Download as JSON
                     downloadObjectAsJson(this.formData.newUser, 'user');
                     // Set current user
                     setUser(JSON.stringify(this.formData.newUser));
                 }
             })
-            .catch(function (err) {
-                // TODO Show notification error
-                console.log(err);
+            .catch(function (e) {
+                throw e;
             });
             // Close modal
             document.querySelector('#createKey').classList.remove('is-active');
@@ -267,6 +284,7 @@ var main = new Vue({
                 let enAESkey = await Encrypt.encryptRSAString(proAESkey, recipientKey);
                 // console.log(proAESkey, enAESkey);
                 // Create Medblock object TODO
+                console.log(this.currentUser.publicKey);
                 let medblockobj = {
                     title: title,
                     files: encryptedfiles,
@@ -278,8 +296,11 @@ var main = new Vue({
                     ],
                     format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
                     type: 'medblock',
-                    creator: Encrypt.exportRSAKey(this.currentUser.publicKey),
-                    user: {}
+                    creator: {
+                        publicKey: Encrypt.exportRSAKey(this.currentUser.publicKey),
+                        email: this.currentUser.email
+                    },
+                    user: this.currentUser.email
                 };
                 // Post to database
                 Database.postNewMedblock(medblockobj);

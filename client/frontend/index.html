@@ -201,7 +201,13 @@
                                 <div class="field">
                                     <label for="" class="label">Email</label>
                                     <div class="control">
-                                        <input type="email" required v-model="formData.newUser.email" class="input" placeholder="eg. yourname@domain.com">
+                                        <input type="email" required v-model="formData.newUser.email" class="input" placeholder="eg. yourname@domain.com"/>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="" class="label">Password</label>
+                                    <div class="control">
+                                        <input type="password" required v-model="formData.newUser.password" class="input" placeholder="********"/>
                                     </div>
                                 </div>
                                 <div class="field">
@@ -320,6 +326,7 @@
     <script src="assets/lib/buffer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
+    <script src="assets/lib/pouchdb.authentication.min.js"></script>
     <script src="https://unpkg.com/ipfs-api/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encrypt.js"></script>
