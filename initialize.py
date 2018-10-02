@@ -78,7 +78,7 @@ def initializa_couchdb(couch_username, couch_password):
     requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json="rsa")
     print("Testing initialization...")
     dbs = requests.get(couchdb + "_all_dbs").json()
-    assert(len(dbs) == 2)
+    assert(len(dbs) == 2, "More than two databases found!")
     assert('_users' in dbs)
     assert('medblocks' in dbs)
 
