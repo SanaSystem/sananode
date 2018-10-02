@@ -120,8 +120,15 @@ async function clearUser () {
     let currentuserstr = await stringifyCurrentUser();
     Database.setUser(currentuserstr);
 };
-function downloadObjectAsJson(exportObj, exportName){
-    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, ['publicKey', 'privateKey', 'name', 'email']));
+function downloadObjectAsJson(exportObj, exportName){ // FIXME fix export of publick and private keys
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, function (key, value) {
+        if (['publicKey', 'privateKey', 'name', 'email'].indexOf(key) > -1) {
+            return value;
+        }
+        else {
+            return undefined;
+        }
+    }));
     var downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", exportName + ".json");
