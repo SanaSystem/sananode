@@ -67,13 +67,18 @@ def initializa_couchdb(couch_username, couch_password):
     'validate_doc_update': 'function (newDoc, savedDoc, userCtx) {\nfunction require(field, message) {\nmessage = message || "Document must have a " + field;\nif (!newDoc[field]) throw({forbidden : message});\n};\nif (newDoc.type == "medblock") {\nrequire("format");\nrequire("files");\nrequire("keys");\nrequire("user");\n}\n}\n'
     }
     requests.put(couchdb + "medblocks/_design/validate_medblocks", json=validate_medblock)
+    authenticate_only_user = {
+        '_id':'_design/only_user',
+        'validate_doc_update': "function (newDoc, savedDoc, userCtx) {\nfunction require(field, message) {\nmessage = message || \"Document must have a \" + field;\nif (!newDoc[field]) throw({forbidden : message});\n};\nif (newDoc.type == \"medblock\") {\nrequire(\"format\");\nrequire(\"files\");\nrequire(\"keys\");\nrequire(\"user\");\n}\n}\n"
+    }
+    requests.put(couchdb + "medblocks/_design/only_user", json=authenticate_only_user)
     print("[+] Making email user field public")
     requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json="email")
     print("[+] Making rsa user field public")
     requests.put(couchdb + "_node/nonode@nohost/_config/couch_httpd_auth/public_fields", json="rsa")
     print("Testing initialization...")
     dbs = requests.get(couchdb + "_all_dbs").json()
-    assert(len(dbs) == 2)
+    assert(len(dbs) == 2, "More than two databases found!")
     assert('_users' in dbs)
     assert('medblocks' in dbs)
 

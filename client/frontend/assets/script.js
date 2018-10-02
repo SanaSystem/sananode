@@ -276,7 +276,8 @@ var main = new Vue({
                             encryptedAESKey: enAESkey
                         }
                     ],
-                    format: 'MEDBLOCK_01',
+                    format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
+                    type: 'medblock',
                     creator: Encrypt.exportRSAKey(this.currentUser.publicKey),
                     user: {}
                 };
