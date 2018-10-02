@@ -69,7 +69,7 @@ def initializa_couchdb(couch_username, couch_password):
     requests.put(couchdb + "medblocks/_design/validate_medblocks", json=validate_medblock)
     authenticate_only_user = {
         '_id':'_design/only_user',
-        'validate_doc_update': "function (newDoc, savedDoc, userCtx) {\nfunction require(field, message) {\nmessage = message || \"Document must have a \" + field;\nif (!newDoc[field]) throw({forbidden : message});\n};\nif (newDoc.type == \"medblock\") {\nrequire(\"format\");\nrequire(\"files\");\nrequire(\"keys\");\nrequire(\"user\");\n}\n}\n"
+        'validate_doc_update': "function(newDoc, oldDoc, userCtx){\r\nif (newDoc.user !== userCtx.name){\r\nthrow({forbidden : \"doc.user must be the same as your username.\"});\r\n}\r\nif (oldDoc){\r\nif (oldDoc.user !== userCtx.name){\r\nthrow({forbidden: 'doc.user not authorized to modify.'});\r\n}\r\n}\r\n}\r\n"
     }
     requests.put(couchdb + "medblocks/_design/only_user", json=authenticate_only_user)
     print("[+] Making email user field public")
