@@ -125,6 +125,14 @@
 				throw e;
 			}
 		},
+		async signOut () {
+			try {
+				await MEDBLOCK.logOut();
+			}
+			catch (e) {
+				throw e;
+			}
+		},
 		async postNewMedblock (medblock) {
 			let uuid = await axios.get(porturl(5984) + '/_uuids?count=1');
 			uuid = uuid.data.uuids;

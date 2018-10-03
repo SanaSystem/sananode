@@ -17,6 +17,10 @@ const DATA = {
         user: false,
         saved: false
     },
+    records: {
+        list: [],
+        len: 0
+    },
     ipAddress: '',
     formData: {
         newUser: {
@@ -119,6 +123,8 @@ async function clearUser () {
     // Save
     let currentuserstr = await stringifyCurrentUser();
     Database.setUser(currentuserstr);
+    // Signout of pouchdb
+    Database.signOut();
 };
 function downloadObjectAsJson(exportObj, exportName){
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
@@ -287,9 +293,10 @@ var main = new Vue({
                 // Encrypt AES key with RSA
                 let recipientKey = await Encrypt.importRSAPublicKey(user.publicKey);
                 let enAESkey = await Encrypt.encryptRSAString(proAESkey, recipientKey);
+                // Current user key
+                let currentuserKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
                 // console.log(proAESkey, enAESkey);
                 // Create Medblock object TODO
-                console.log(this.currentUser.publicKey);
                 let medblockobj = {
                     title: title,
                     files: encryptedfiles,
@@ -302,10 +309,10 @@ var main = new Vue({
                     format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
                     type: 'medblock',
                     creator: {
-                        publicKey: Encrypt.exportRSAKey(this.currentUser.publicKey),
+                        publicKey: currentuserKey,
                         email: this.currentUser.email
                     },
-                    user: this.currentUser.email
+                    recipent: this.formData.uploadRecords.recipient
                 };
                 // Post to database
                 Database.postNewMedblock(medblockobj);
@@ -352,6 +359,7 @@ var main = new Vue({
                 this.formData.uploadRecords.recipientValid = 0;
             }
         },
+        handleOpenItem () {},
         // ReWrite
         loadTextFromFile(ev) {
             const file = ev.target.files[0];
@@ -363,6 +371,15 @@ var main = new Vue({
         },
         signOut () {
             clearUser();
+        }
+    },
+    watch: {
+        'currentUser.email': function (val) {
+            // Clear records
+            this.records.list = [];
+            this.records.len = 0;
+            // Call medblocks query for list records (20)
+            
         }
     }
 })

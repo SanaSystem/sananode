@@ -143,24 +143,18 @@
                         <table class="table is-fullwidth is-hoverable">
                                 <thead>
                                   <tr>
-                                    <th>Record ID</th>
+                                    <th>Title</th>
                                     <th>Recipient</th>
-                                    <th>Format</th>
-                                    <th>Permission</th>
+                                    <th>Files</th>
+                                    <th></th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>1233</td>
-                                        <td>tornadoalert@gmail.com</td>
-                                        <td>History-AES-256</td>
-                                        <td><a  class="button is-info">View</a></td>
-                                    </tr>
-                                    <tr>
-                                        <td>433</td>
-                                        <td>tornadoalert@gmail.com</td>
-                                        <td>Xray-AES-256</td>
-                                        <td><a  class="button is-danger is-loading" disabled>Request</a></td>
+                                    <tr v-for="item in records.list">
+                                        <td>{{item.title}}</td>
+                                        <td>{{item.recipient}}</td>
+                                        <td>{{item.files}}</td>
+                                        <td><a class="button is-info" @click="handleOpenRecord(item)">View</a></td>
                                     </tr>
                                 </tbody>
                         </table>
