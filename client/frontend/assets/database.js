@@ -1,29 +1,33 @@
-(function () {
 	const GENERAL = PouchDB('generaldata');
-	const MEDBLOCK = PouchDB(porturl(8001) + '/medblocks/');
+	const MEDBLOCK = PouchDB(porturl(5984) + '/medblocks/', {
+		fetch: function (url, opts){
+		  opts.credentials = 'include';
+		  return PouchDB.fetch(url, opts);
+		}
+	});
 
-	// Sync for GENERAL.userlist
-	// TODO make sync automatic
-	async function syncGeneralUserlist () {
-		let users = await axios.get(porturl(8000) + '/users/');
-		users = users.data;
-		try {
-			let userlist = await GENERAL.get('userlist');
-			userlist.data = users;
-			await GENERAL.put(userlist);
-		}
-		catch (e) {
-			if (e.status === 404) {
-				await GENERAL.put({
-					data: users,
-					_id: 'userlist'
-				});
-			}
-			else {
-				throw e;
-			}
-		}
-	};
+	// // Sync for GENERAL.userlist
+	// // TODO make sync automatic
+	// async function syncGeneralUserlist () {
+	// 	let users = await axios.get(porturl(8000) + '/users/');
+	// 	users = users.data;
+	// 	try {
+	// 		let userlist = await GENERAL.get('userlist');
+	// 		userlist.data = users;
+	// 		await GENERAL.put(userlist);
+	// 	}
+	// 	catch (e) {
+	// 		if (e.status === 404) {
+	// 			await GENERAL.put({
+	// 				data: users,
+	// 				_id: 'userlist'
+	// 			});
+	// 		}
+	// 		else {
+	// 			throw e;
+	// 		}
+	// 	}
+	// };
 
 	let DATABASE = {
 		async getUser () {
@@ -55,38 +59,84 @@
 		},
 		async searchUsersByEmail (email) {
 			try {
-				let userlist = await GENERAL.get('userlist');
-				userlist = userlist.data;
-				let found = userlist.find(function (user) {
-					if (user.email === email) {
-						return true;
-					}
-					else {
-						return false;
+				let user = await MEDBLOCK.getUser(email, {
+					ajax: {
+						withCredentials: true
 					}
 				});
-				if (found !== undefined && typeof found.publicKey === 'string') {
-					found.publicKey = JSON.parse(found.publicKey);
+				return user;
+			}
+			catch (e) {
+				if (e.name === 'not_found') {
+					console.log("User not found.");
+					return undefined;
 				}
-				return found;
+				else {
+					throw e;
+				}
+			}
+			return true;
+		},
+		// async getAllUsers () {
+		// 	try {
+		// 		return await GENERAL.get('userlist');
+		// 	}
+		// 	catch (e) {
+		// 		throw e;
+		// 	}
+		// },
+		async signUp (name, password, meta) {
+			try {
+				meta = meta || {};
+				let res = await MEDBLOCK.signUp(name, password, {
+					metadata: meta,
+					ajax: {
+						withCredentials: false
+					}
+				});
+				if (res.ok === true) {
+					return true;
+				}
+				else {
+					console.log(res); // Gracefull TODO
+					return false;
+				}
 			}
 			catch (e) {
 				throw e;
 			}
 		},
-		async getAllUsers () {
+		async signIn (name, password) {
 			try {
-				return await GENERAL.get('userlist');
+				let res = await MEDBLOCK.logIn(name, password, {
+					ajax: {
+						withCredentials: true
+					}
+				});
+				if (res.ok === true) {
+					return true;
+				}
+				else {
+					console.log(res) // Gracefull TODO
+					return false;
+				}
+			}
+			catch (e) {
+				throw e;
+			}
+		},
+		async signOut () {
+			try {
+				await MEDBLOCK.logOut();
 			}
 			catch (e) {
 				throw e;
 			}
 		},
 		async postNewMedblock (medblock) {
-			let uuid = await axios.get(porturl(8001) + '/_uuids?count=1');
+			let uuid = await axios.get(porturl(5984) + '/_uuids?count=1');
 			uuid = uuid.data.uuids;
 			medblock._id = uuid[0];
-			console.log(medblock);
 			try {
 				await MEDBLOCK.put(medblock);
 			}
@@ -96,7 +146,6 @@
 		}
 	};
 
-	syncGeneralUserlist();
+	// syncGeneralUserlist();
 
 	window.Database = DATABASE;
-})();

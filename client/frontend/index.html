@@ -119,7 +119,7 @@
                                 </div>
                             
                                 <p class="level-item">
-                                <a class="button is-success" onclick="document.querySelector('#newRecord').classList.add('is-active')">New</a>
+                                <a v-if="currentUser.user" class="button is-success" onclick="document.querySelector('#newRecord').classList.add('is-active')">New</a>
                                 </p> 
                             </div>
                             <div class="level-right">
@@ -143,24 +143,18 @@
                         <table class="table is-fullwidth is-hoverable">
                                 <thead>
                                   <tr>
-                                    <th>Record ID</th>
+                                    <th>Title</th>
                                     <th>Recipient</th>
-                                    <th>Format</th>
-                                    <th>Permission</th>
+                                    <th>Files</th>
+                                    <th></th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>1233</td>
-                                        <td>tornadoalert@gmail.com</td>
-                                        <td>History-AES-256</td>
-                                        <td><a  class="button is-info">View</a></td>
-                                    </tr>
-                                    <tr>
-                                        <td>433</td>
-                                        <td>tornadoalert@gmail.com</td>
-                                        <td>Xray-AES-256</td>
-                                        <td><a  class="button is-danger is-loading" disabled>Request</a></td>
+                                    <tr v-for="item in records.list">
+                                        <td>{{item.title}}</td>
+                                        <td>{{item.recipient}}</td>
+                                        <td>{{item.files}}</td>
+                                        <td><a class="button is-info" @click="handleOpenRecord(item)">View</a></td>
                                     </tr>
                                 </tbody>
                         </table>
@@ -201,7 +195,13 @@
                                 <div class="field">
                                     <label for="" class="label">Email</label>
                                     <div class="control">
-                                        <input type="email" required v-model="formData.newUser.email" class="input" placeholder="eg. yourname@domain.com">
+                                        <input type="email" required v-model="formData.newUser.email" class="input" placeholder="eg. yourname@domain.com"/>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="" class="label">Password</label>
+                                    <div class="control">
+                                        <input type="password" required v-model="formData.newUser.password" class="input" placeholder="********"/>
                                     </div>
                                 </div>
                                 <div class="field">
@@ -317,9 +317,10 @@
     </div>
 
     <script src="assets/utils.js"></script>
-    <script src="assets/lib/buffer.js"></script>
+    <script src="assets/buffer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
+    <script src="assets/pouchdb.authentication.min.js"></script>
     <script src="https://unpkg.com/ipfs-api/dist/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
     <script src="assets/encrypt.js"></script>
