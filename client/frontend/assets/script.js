@@ -120,14 +120,12 @@ async function clearUser () {
     let currentuserstr = await stringifyCurrentUser();
     Database.setUser(currentuserstr);
 };
-function downloadObjectAsJson(exportObj, exportName){ // FIXME fix export of publick and private keys
-    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, function (key, value) {
-        if (['publicKey', 'privateKey', 'name', 'email'].indexOf(key) > -1) {
-            return value;
-        }
-        else {
-            return undefined;
-        }
+function downloadObjectAsJson(exportObj, exportName){
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+        name: exportObj.name,
+        email:exportObj.email,
+        publicKey: exportObj.publicKey,
+        privateKey: exportObj.privateKey
     }));
     var downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
@@ -216,10 +214,10 @@ var main = new Vue({
                 username: this.formData.newUser.name,
                 publicKey: this.formData.newUser.publicKey
             })
-            .then((sucess) => {
+            .then(async (sucess) => {
                 if (sucess) {
                     // Download as JSON
-                    downloadObjectAsJson(this.formData.newUser, 'user');
+                    await downloadObjectAsJson(this.formData.newUser, 'user');
                     // Set current user
                     setUser(JSON.stringify(this.formData.newUser));
                 }

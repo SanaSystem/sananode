@@ -91,7 +91,7 @@
 				let res = await MEDBLOCK.signUp(name, password, {
 					metadata: meta,
 					ajax: {
-						withCredentials: true
+						withCredentials: false
 					}
 				});
 				if (res.ok === true) {

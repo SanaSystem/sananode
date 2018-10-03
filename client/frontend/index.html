@@ -119,7 +119,7 @@
                                 </div>
                             
                                 <p class="level-item">
-                                <a class="button is-success" onclick="document.querySelector('#newRecord').classList.add('is-active')">New</a>
+                                <a v-if="currentUser.user" class="button is-success" onclick="document.querySelector('#newRecord').classList.add('is-active')">New</a>
                                 </p> 
                             </div>
                             <div class="level-right">
