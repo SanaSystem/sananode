@@ -21,7 +21,7 @@ services:
     volumes:
       - couchdb-data:/opt/couchdb/data
       # - ./couchconfig:/opt/couchdb/etc/local.d
-      - ./config/enableCors.ini:/opt/couchdb/etc/local.ini
+      - ./config/couchdb.ini:/opt/couchdb/etc/local.ini
   # worker:
   #   build: .
   #   command: celery -A tasks worker --loglevel=info

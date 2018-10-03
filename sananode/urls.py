@@ -20,6 +20,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
     url(r'^$', api_root),
+    url(r'^admin/', admin.site.urls),
     url(r'^nodes/$', NodeListView.as_view(), name='node-list'),
     url(r'^users/$', UserListView.as_view(), name='user-list')
 ]
