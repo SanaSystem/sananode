@@ -25,8 +25,10 @@
 			});
 			return res;
 		},
-		async getFile (hash, path) {
-			let addr = `${hash}/${path}`;
+		async getFile (hash) {
+			let data = await NODE.get(hash);
+			data = data[0].content;
+			return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
 		}
 	};
 

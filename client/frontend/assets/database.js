@@ -59,11 +59,7 @@
 		},
 		async searchUsersByEmail (email) {
 			try {
-				let user = await MEDBLOCK.getUser(email, {
-					ajax: {
-						withCredentials: true
-					}
-				});
+				let user = await MEDBLOCK.getUser(email);
 				return user;
 			}
 			catch (e) {
@@ -89,10 +85,7 @@
 			try {
 				meta = meta || {};
 				let res = await MEDBLOCK.signUp(name, password, {
-					metadata: meta,
-					ajax: {
-						withCredentials: false
-					}
+					metadata: meta
 				});
 				if (res.ok === true) {
 					return true;
@@ -108,11 +101,7 @@
 		},
 		async signIn (name, password) {
 			try {
-				let res = await MEDBLOCK.logIn(name, password, {
-					ajax: {
-						withCredentials: true
-					}
-				});
+				let res = await MEDBLOCK.logIn(name, password);
 				if (res.ok === true) {
 					return true;
 				}
@@ -139,6 +128,36 @@
 			medblock._id = uuid[0];
 			try {
 				await MEDBLOCK.put(medblock);
+			}
+			catch (e) {
+				throw e;
+			}
+		},
+		async fetchRecords (lim = 10, skip = 0) {
+			let res = await MEDBLOCK.query('preview/list', {
+				limit: lim,
+				skip: skip,
+				reduce: false
+			});
+			let results = res.rows.map(function (block) {
+				return {
+					id: block.id,
+					from: block.key,
+					to: block.value.recipient,
+					title: block.value.title,
+					files: block.value.files
+				};
+			});
+			return results;
+		},
+		async fetchRecord (recordid) {
+			let record = await MEDBLOCK.get(recordid);
+			return record;
+		},
+		async numberOfRecords () {
+			try {
+				let records = await MEDBLOCK.query('preview/list', {reduce:true});
+				return records;
 			}
 			catch (e) {
 				throw e;

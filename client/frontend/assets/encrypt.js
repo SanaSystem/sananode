@@ -1,4 +1,3 @@
-(function () {
 	// STRING/ARRAY BUFFER HELPER FUNCTIONS
 	function stringToArrayBuffer (str) {
 		var buf = new ArrayBuffer(str.length * 2);
@@ -23,6 +22,11 @@
 				throw e;
 			}
 		},
+		async encryptRSAStringToArray (str, publickey) {
+			let buff = await crypto.subtle.encrypt('RSA-OAEP', publickey, stringToArrayBuffer(str));
+			let arr = Array.from(new Uint8Array(buff));
+			return arr;
+		},
 		async decryptRSAString (str, privatekey) {
 			try {
 				let arr = await crypto.subtle.decrypt('RSA-OAEP', privatekey, stringToArrayBuffer(str));
@@ -31,6 +35,11 @@
 			catch (e) {
 				throw e;
 			}
+		},
+		async decryptRSAStringFromArray (arr, privatekey) {
+			let a = Uint8Array.from(arr);
+			let buff = await crypto.subtle.decrypt('RSA-OAEP', privatekey, a.buffer);
+			return arrayBufferToString(buff);
 		},
 		async newRSAKeys () {
 			try {
@@ -186,9 +195,9 @@
 				return arr;
 			}
 			catch (e) {
+				console.log(e);
 				throw e;
 			}
 		}
 	};
 	window.Encrypt = ENCRYPT;
-})();

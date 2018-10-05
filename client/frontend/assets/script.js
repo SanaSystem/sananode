@@ -9,6 +9,9 @@
 
 const DATA = {
     current: 'records',
+    stats: {
+        numberofrecords: 0
+    },
     currentUser: {
         publicKey: '',
         privateKey: '',
@@ -19,7 +22,9 @@ const DATA = {
     },
     records: {
         list: [],
-        len: 0
+        skip: 0,
+        loader: true,
+        step: 3
     },
     ipAddress: '',
     formData: {
@@ -35,6 +40,14 @@ const DATA = {
             recipientValid: 0,
             title: '',
             files: []
+        },
+        viewRecord: {
+            title: '',
+            from: '',
+            to: '',
+            files: [],
+            decryptionStatus: 0,
+            status: 0
         }
     }
 };
@@ -126,7 +139,7 @@ async function clearUser () {
     // Signout of pouchdb
     Database.signOut();
 };
-function downloadObjectAsJson(exportObj, exportName){
+function downloadObjectAsJson (exportObj, exportName) {
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
         name: exportObj.name,
         email:exportObj.email,
@@ -136,6 +149,32 @@ function downloadObjectAsJson(exportObj, exportName){
     var downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", exportName + ".json");
+    // document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+};
+function downloadArrayBuffer (buff, name, type) {
+    var blob = new Blob([buff], {type: type});
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", URL.createObjectURL(blob));
+    downloadAnchorNode.setAttribute("download", name);
+    // document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+};
+async function generateZipFileFromRecord () {
+    let zip = new JSZip();
+    DATA.formData.viewRecord.files.forEach(function (file) {
+        zip.file(file.name, file.data, {
+            binary: true
+        });
+    });
+    let zipfile = await zip.generateAsync({
+        type: 'blob'
+    });
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", URL.createObjectURL(zipfile));
+    downloadAnchorNode.setAttribute("download", DATA.formData.viewRecord.title + '.zip');
     // document.body.appendChild(downloadAnchorNode); // required for firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -191,11 +230,103 @@ async function encryptFileTree (filelist, key) {
     let results = await Promise.all(promises);
     return results;
 };
+async function getFileTreeFromHashTree (filelist, aeskey) {
+    let filelistunit = 80 / filelist.length;
+    let AESKey = await Encrypt.importAESKey(aeskey);
+    let promises = filelist.map(async function (file) {
+        let data = await IPFSUtils.getFile(file.hash);
+        // Decrypt data
+        data = await Encrypt.decryptAESBuffer({
+            enarr: data,
+            iv: file.iv
+        }, AESKey);
+        delete file.hash;
+        delete file.iv;
+        file.data = data;
+        DATA.formData.viewRecord.decryptionStatus += filelistunit;
+        return file;
+    });
+    let results = await Promise.all(promises);
+    return results;
+};
+async function getRecordsBatch () {
+    try {
+        let records = await Database.fetchRecords(DATA.records.step, DATA.records.skip);
+        if (records.length > 0) {
+            // Set the skip
+            DATA.records.skip += records.length;
+        }
+        // Check if the length > step
+        if (records.length < DATA.records.step) {
+            DATA.records.loader = false;
+        }
+        // return batch of records
+        return records;
+    }
+    catch (e) {
+        throw e;
+    }
+};
+async function decryptPossible (publickey) {
+    let currentUserKey = await Encrypt.exportRSAKey(DATA.currentUser.publicKey);
+    if (currentUserKey.n === publickey.n) {
+        return true;
+    }
+    else {
+        return false;
+    }
+};
+async function updateRecords () {
+    try {
+        let records = await getRecordsBatch();
+        DATA.records.list = DATA.records.list.concat(records);
+    }
+    catch (e) {
+        throw e;
+    }
+};
+async function displayRecord (record) {
+    // Open Modal Window
+    document.querySelector('#viewRecord').classList.add('is-active');
+    // Set the Variables
+    DATA.formData.viewRecord.title = record.title;
+    DATA.formData.viewRecord.from = record.creator.email;
+    DATA.formData.viewRecord.to = record.recipient;
+    // Start Decryption
+    // Set state to 0
+    DATA.formData.viewRecord.status = 0;
+    // Check if decryption is possible
+    let possible = await decryptPossible(record.keys[0].RSAPublicKey);
+    if (possible) {
+        try {
+            // Decrypt AES Key
+            let AESKey = await Encrypt.decryptRSAStringFromArray(record.keys[0].encryptedAESKey, DATA.currentUser.privateKey);
+            DATA.formData.viewRecord.decryptionStatus += 20;
+            // create File Tree from IPFS
+            let files = await getFileTreeFromHashTree(record.files, AESKey);
+            // Set to files
+            DATA.formData.viewRecord.files = files;
+            // Set state to 1
+            DATA.formData.viewRecord.status = 1;
+        }
+        catch (e) {
+            throw e;
+        }
+    }
+    else {
+        // Set state to -1
+        DATA.formData.viewRecord.status = -1;
+    }
+};
 
 var main = new Vue({
     el: '#app',
     data: DATA,
     async created() {
+        // Set current stats
+        let numberofrecords = await Database.numberOfRecords();
+        this.stats.numberofrecords = numberofrecords.rows[0].value;
+        // User
         try {
             // Set the current user if any
             let userjson = await Database.getUser();
@@ -206,6 +337,8 @@ var main = new Vue({
             clearUser();
             throw e;
         }
+        // Medblocks records
+        updateRecords();
     },
     methods: {
         // ReWrite
@@ -277,7 +410,7 @@ var main = new Vue({
                 // let contents = decoder.decode(defile);
                 // console.log(contents);
                 // console.log(encryptedfiles);
-                // Store Encrypted file on IPFS and get IPFS Hash COMBAK
+                // Store Encrypted file on IPFS and get IPFS Hash
                 let ipfsfiles = encryptedfiles.map(f => {
                     return {
                         path: '/' + f.name,
@@ -292,11 +425,11 @@ var main = new Vue({
                 });
                 // Encrypt AES key with RSA
                 let recipientKey = await Encrypt.importRSAPublicKey(user.publicKey);
-                let enAESkey = await Encrypt.encryptRSAString(proAESkey, recipientKey);
+                let enAESkey = await Encrypt.encryptRSAStringToArray(proAESkey, recipientKey);
                 // Current user key
                 let currentuserKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
                 // console.log(proAESkey, enAESkey);
-                // Create Medblock object TODO
+                // Create Medblock object
                 let medblockobj = {
                     title: title,
                     files: encryptedfiles,
@@ -312,7 +445,7 @@ var main = new Vue({
                         publicKey: currentuserKey,
                         email: this.currentUser.email
                     },
-                    recipent: this.formData.uploadRecords.recipient
+                    recipient: this.formData.uploadRecords.recipient
                 };
                 // Post to database
                 Database.postNewMedblock(medblockobj);
@@ -359,7 +492,22 @@ var main = new Vue({
                 this.formData.uploadRecords.recipientValid = 0;
             }
         },
-        handleOpenItem () {},
+        handleLoadMoreRecords () {
+            updateRecords();
+        },
+        async handleOpenRecord (item) {
+            // Get record
+            let record = await Database.fetchRecord(item.id);
+            // Display record
+            displayRecord(record);
+        },
+        handleDownloadRecordFile (item) {
+            downloadArrayBuffer(item.data, item.name, item.type);
+        },
+        async handleDownloadAllRecordFiles () {
+            // Zip the files
+            await generateZipFileFromRecord();
+        },
         // ReWrite
         loadTextFromFile(ev) {
             const file = ev.target.files[0];
@@ -371,15 +519,6 @@ var main = new Vue({
         },
         signOut () {
             clearUser();
-        }
-    },
-    watch: {
-        'currentUser.email': function (val) {
-            // Clear records
-            this.records.list = [];
-            this.records.len = 0;
-            // Call medblocks query for list records (20)
-            
         }
     }
 })

@@ -88,7 +88,7 @@
                         <div class="columns is-multiline">
                             <div class="column is-12-tablet is-6-desktop is-3-widescreen">
                                 <div class="notification is-success has-text">
-                                    <p class="title is-1">1,232</p>
+                                    <p class="title is-1">{{stats.numberofrecords}}</p>
                                     <p class="subtitle is-4">Records</p>
                                 </div>
                             </div>
@@ -144,7 +144,7 @@
                                 <thead>
                                   <tr>
                                     <th>Title</th>
-                                    <th>Recipient</th>
+                                    <th>From</th>
                                     <th>Files</th>
                                     <th></th>
                                   </tr>
@@ -152,9 +152,12 @@
                                 <tbody>
                                     <tr v-for="item in records.list">
                                         <td>{{item.title}}</td>
-                                        <td>{{item.recipient}}</td>
+                                        <td>{{item.from}}</td>
                                         <td>{{item.files}}</td>
-                                        <td><a class="button is-info" @click="handleOpenRecord(item)">View</a></td>
+                                        <td><a v-if="currentUser.user && item.to === currentUser.email" class="button is-info" @click="handleOpenRecord(item)">View</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="has-text-centered" colspan="4" v-if="records.loader" @click="handleLoadMoreRecords">Load More Records</td>
                                     </tr>
                                 </tbody>
                         </table>
@@ -312,11 +315,74 @@
                     </div>
                     <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('#newRecord').classList.remove('is-active')"></button>
                 </div>
+                <div id="viewRecord" class="modal">
+                    <div class="modal-background"></div>
+                    <div class="modal-content">
+                        <div class="box">
+                            <h1 class="title is-size-4 has-text-centered">{{formData.viewRecord.title}}</h1>
+                            <div class="field">
+                                <label class="label">From:</label>
+                                <div class="control">
+                                    <span class="is-size-5">{{formData.viewRecord.from}}</span>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">To:</label>
+                                <div class="control">
+                                    <span class="is-size-5">{{formData.viewRecord.to}}</span>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Files</label>
+                                <div class="control">
+                                    <div v-if="formData.viewRecord.status === -1" class="notification is-size-6">
+                                        Files cannot be decrypted.
+                                    </div>
+                                    <div v-if="formData.viewRecord.status === 0" class="notification is-fullwidth">
+                                        <progress class="progress" :value="formData.viewRecord.decryptionStatus" max="100"></progress>
+                                    </div>
+                                    <table v-if="formData.viewRecord.status === 1" class="table is-fullwidth">
+                                        <thead>
+                                            <tr>
+                                                <th>File name</th>
+                                                <th class="is-narrow"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="item in formData.viewRecord.files">
+                                                <td>{{item.name}}</td>
+                                                <td>
+                                                    <a class="button is-text" @click="handleDownloadRecordFile(item)">
+                                                        <span class="icon is-small">
+                                                            <i class="fas fa-download"></i>
+                                                        </span>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    <a class="button is-fullwidth is-text" @click="handleDownloadAllRecordFiles">
+                                                        <span class="icon is-small">
+                                                            <i class="fas fa-download"></i>
+                                                        </span>
+                                                        <span>Download All Files</span>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('#viewRecord').classList.remove('is-active')"></button>
+                </div>
             </div>
         </section>
     </div>
 
     <script src="assets/utils.js"></script>
+    <script src="assets/jszip.min.js"></script>
     <script src="assets/buffer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/pouchdb@7.0.0/dist/pouchdb.min.js"></script>
