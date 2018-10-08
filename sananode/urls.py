@@ -15,14 +15,15 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from server.views import NodeListView, UserListView, api_root
+from server.views import NodeListView, UserListView, PermissionsView, api_root
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
     url(r'^$', api_root),
     url(r'^admin/', admin.site.urls),
     url(r'^nodes/$', NodeListView.as_view(), name='node-list'),
-    url(r'^users/$', UserListView.as_view(), name='user-list')
+    url(r'^users/$', UserListView.as_view(), name='user-list'),
+    url(r'^permissions/$', PermissionsView.as_view(), name='permission-list')
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
