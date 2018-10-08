@@ -85,9 +85,26 @@ def initializa_couchdb(couch_username, couch_password):
     }
     requests.put(couchdb + "medblocks/_design/validate_medblocks", json=validate_medblock)
     authenticate_only_user = {
-        '_id':'_design/only_user',
-        'validate_doc_update': "function(newDoc, oldDoc, userCtx){\r\nif (newDoc.user !== userCtx.name){\r\nthrow({forbidden : \"doc.user must be the same as your username.\"});\r\n}\r\nif (oldDoc){\r\nif (oldDoc.user !== userCtx.name){\r\nthrow({forbidden: 'doc.user not authorized to modify.'});\r\n}\r\n}\r\n}\r\n"
+    "_id": "_design/only_user",
+    "validate_doc_update": "function(newDoc, oldDoc, userCtx){\r\nif (newDoc.creator.email !== userCtx.name){\r\nthrow({forbidden : \"User must be the same as the one who created this document.\"});\r\n}\r\nif (oldDoc){\r\nif (oldDoc.creator.email !== userCtx.name){\r\nthrow({forbidden: 'User not authorized to modify.'});\r\n}\r\n}\r\n}\r\n"
     }
+
+    preview_medblock = {
+    "_id": "_design/preview",
+    "views": {
+        "list": {
+        "map": "function (doc) {\n  emit(doc.creator.email, {\n    title: doc.title,\n    recipient: doc.recipient,\n    files: doc.files.length\n  });\n}",
+        "reduce": "_count"
+        }
+    },
+    "language": "javascript"
+    }
+    # Create Preview
+
+
+    
+    ## TO DO
+
     requests.put(couchdb + "medblocks/_design/only_user", json=authenticate_only_user)
     print("Testing initialization...")
     dbs = requests.get(couchdb + "_all_dbs").json()
@@ -140,7 +157,7 @@ def main():
     print("[+] Building docker containers")
     subprocess.call(command(["docker-compose","build"]), shell=True)
     print("[+] Running 'docker-compose up' as a child process. If this is the first time this may take a long time...")
-    subprocess.Popen(command(["docker-compose", "up"]), shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen(command(["docker-compose", "up"]), shell=True)
     wait_for_web_container()
     print("[+] Running migrations for Django")
     subprocess.call(command(["docker-compose", "exec", "web", "python", "manage.py", "makemigrations"]), shell=True)
