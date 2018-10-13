@@ -7,8 +7,8 @@ services:
     - "5001:5001"
     volumes:
     - ipfs-data:/data/ipfs
-  # rabbit:
-  #   image: rabbitmq:alpine
+  rabbit:
+    image: rabbitmq:alpine
   # redis:
   #   image: redis
   couchdb:
@@ -22,14 +22,13 @@ services:
       - couchdb-data:/opt/couchdb/data
       # - ./couchconfig:/opt/couchdb/etc/local.d
       - ./config/couchdb.ini:/opt/couchdb/etc/local.ini
-  # worker:
-  #   build: .
-  #   command: celery -A tasks worker --loglevel=info
-  #   volumes:
-  #     - .:/code/
-  #   depends_on:
-  #     - rabbit
-  #     - redis
+  worker:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    volumes:
+      - .:/code/
+    depends_on:
+      - rabbit
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000

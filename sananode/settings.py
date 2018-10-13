@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     'server',
     'client',
+    'django_celery_results',
     'corsheaders',
     'rest_framework',
     'django.contrib.admin',
@@ -125,3 +126,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+CELERY_BROKER_URL = 'amqp://rabbit'
+
+CELERY_RESULT_BACKEND = 'django-db'
