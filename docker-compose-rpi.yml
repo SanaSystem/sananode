@@ -2,7 +2,9 @@ version: '3'
 
 services:
   ipfs:
-    image: tornadoalert/go-ipfs-cors
+    build:
+      context: .
+      dockerfile: ipfsbuild
     ports:
     - "5001:5001"
     volumes:
@@ -10,7 +12,7 @@ services:
   rabbit:
     image: rabbitmq:alpine
   couchdb:
-    image: couchdb
+    image: matthiasg/rpi-couchdb
     ports:
     - "5984:5984"
     environment:
