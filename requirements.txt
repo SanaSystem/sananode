@@ -8,9 +8,11 @@ djangorestframework==3.8.2
 django-celery-results==1.0.1
 django-cors-headers==2.4.0
 idna==2.7
+ifaddr==0.1.4
 ipfsapi==0.4.3
 kombu==4.2.1
 pyaml==17.12.1
+PyOTA==2.0.6
 pytz==2018.5
 redis==2.10.6
 requests==2.19.1

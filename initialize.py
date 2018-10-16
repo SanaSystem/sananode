@@ -29,11 +29,11 @@ def initialize_docker_compose():
         docker_compose_yaml = yaml.load(f.read())
         return docker_compose_yaml
 
-def wait_for_couch_container():
+def wait_for_couch_container(couchdb_url=couchdb_unauth):
     attempt = 1
     while True:
         try:
-            if requests.get(couchdb_unauth).status_code == 200:
+            if requests.get(couchdb_url).status_code == 200:
                 print("[+] Successfully got CouchDB container!")
                 return True
             else:
@@ -45,11 +45,12 @@ def wait_for_couch_container():
             print("[o] Waiting for containers to spin up...{} seconds".format(t))
             time.sleep(t)
             attempt += 1
-def wait_for_web_container():
+
+def wait_for_web_container(url="http://localhost:8000/"):
     attempt = 1
     while True:
         try:
-            if requests.get("http://localhost:8000/").status_code == 200:
+            if requests.get(url).status_code == 200:
                 print("[+] Successfully got web container!")
                 return True
             else:
@@ -136,6 +137,10 @@ def get_ip():
     r = requests.post(bootstrap_url, json={"ipAddress":register_ip, "couchReplication":True, "ipfsReplication":False})
     if r.status_code == 201:
         print("[+] Registered {} successfully".format(r.json()['ipAddress']))
+
+def bootstrap_ipfs():
+    # Add bootstrap ip to ipfs bootstrap list
+    return 
 
 def main():
     print(banner)
