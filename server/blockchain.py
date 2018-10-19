@@ -1,4 +1,5 @@
 import iota
+import json
 iotaNode = "https://field.deviota.com:443"
 
 seed = ""
@@ -6,7 +7,7 @@ api = iota.Iota(iotaNode, seed)
 
 tag_list = {
     'register' : 'VHXGXMNKDBSCVZHZKQNONMC9EQN',
-    'medblock' : 'DSYT9KYMQOLBPPRRMARRBHDQYNA',
+    'body' : 'DSYT9KYMQOLBPPRRMARRBHDQYNA',
     'key': 'IZZX9MBFYQQFVQGMPPGPTQHQPWE',
     'permission': 'CZLRLSSZZIKEAUTLLBFXYEDFMWO',
     'file': 'AZLRLSSZZIKEAUTLLBFXYEDFMWO'
@@ -21,6 +22,27 @@ def random_tag():
 def register_address():
     pass
 
+def serialize_decomposed(decomposed_list):
+    serialized = []
+    for e in decomposed_list:
+        # print(e)
+        obj = {
+        'tag' : tag_list.get(e['tag'], iota.Tag.from_string(e['tag']).as_json_compatible()),
+        'data' : iota.TryteString.from_string(json.dumps(e)),
+        'address' : iota.Address.from_string(e['recipient']),
+        }
+        strict = True
+        if strict:
+            if obj['tag'] not in tag_list.keys():
+                continue
+        serialized.append(obj)
+    return serialized
+
+def deserialize_decomposed(decomposed_list):
+    deseriazed = []
+    for e in decomposed_list:
+        e['data']
+        
 
 def send_message(address, tag, message):
     message = iota.TryteString.from_string(message)
