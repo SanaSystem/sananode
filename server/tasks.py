@@ -1,6 +1,5 @@
 from celery import shared_task, task
 import requests
-from initialize import wait_for_couch_container
 @shared_task
 def add(x,y):
     return x+y
@@ -34,11 +33,11 @@ def check_ipfs_sync(email):
     # Check IPFS sync
 
     # Check Pin status
-
+    pass
 
 @task
 def trigger_sync(email):
-
+    pass
 
 
 

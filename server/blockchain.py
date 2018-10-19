@@ -9,7 +9,7 @@ tag_list = {
     'medblock' : 'DSYT9KYMQOLBPPRRMARRBHDQYNA',
     'key': 'IZZX9MBFYQQFVQGMPPGPTQHQPWE',
     'permission': 'CZLRLSSZZIKEAUTLLBFXYEDFMWO',
-    'file': 
+    'file': 'AZLRLSSZZIKEAUTLLBFXYEDFMWO'
 }
 
 def random_address():
@@ -19,6 +19,7 @@ def random_tag():
     return iota.Tag.random(27)
 
 def register_address():
+    pass
 
 
 def send_message(address, tag, message):
