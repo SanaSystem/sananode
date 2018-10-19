@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from server.tasks import setUpReplication
 # Create your models here.
 class NodeRegistration(models.Model):
     ipAddress = models.CharField(max_length=32)
@@ -9,3 +12,13 @@ class UserRegistration(models.Model):
     name = models.CharField(max_length=200)
     email = models.CharField(max_length=200, unique=True)
     publicKey = models.TextField(unique=True)
+
+class Permission(models.Model):
+    medblockId = models.CharField(max_length=200)
+    user = models.ForeignKey(UserRegistration, models.CASCADE, 'permissions')
+    granted = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('user','medblockId')
+    def email(self):
+        return self.user.email
