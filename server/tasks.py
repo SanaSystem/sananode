@@ -5,42 +5,41 @@ from initialize import wait_for_couch_container
 def add(x,y):
     return x+y
 
-@shared_task
-def setUpReplication(nodeIp):
-    # CouchDb 2 way continuous replication
-    
-    couchdb_url = "http://admin:admin@68.183.18.129:5984/"
-    
-    if wait_for_couch_container(couchdb_url):
-        print("Creating 2 way replication...")
-        r = requests.post(couchdb_url + "_replicate", json= {
-            "source": "http://{}:5984/medblocks/".format(nodeIp),
-            "target": couchdb_url + "medblocks/",
-            "coutinious": True
-        })
-        if r.json()['ok'] == 'true':
-            return True
-    return False
+def decompose_medblock(medblock):
+    pass
 
 @task
-def checkSync(nodeIp):
+def check_iota_sync(email):
+    # list all documents associated with user
+    medblocks_on_disk = []
+    # Decompose document into constituants
+    decomposed_medblocks_on_disk = [[], [], []]
+    # Get associated registered addresses on IOTA
+    
+    # Get all associated transactions with address
+
+    # Decode txns
+    decomposed_medblocks_on_iota = [[], [], []]
+
+    # set.symmetric_difference, from where to where
+
+    # Trigger iota update
+
+    # Trigger couchdb update
+
+    pass
+
+@task 
+def check_ipfs_sync(email):
     # Check IPFS sync
 
     # Check Pin status
 
-    # Check CouchDB sync
-
-    # Check Blockchain sync
-    pass
-
 
 @task
-def checkKeys(nodeIp):
+def trigger_sync(email):
 
-    # Check couchDB database with blockchain database
 
-    # Detele if keys are written to blockchain
 
-    pass
 
 
