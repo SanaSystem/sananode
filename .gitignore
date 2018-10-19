@@ -102,6 +102,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-couchconfig/enableCors.ini
-couchconfig/docker.ini
-docker-compose.yml
+.migrations/

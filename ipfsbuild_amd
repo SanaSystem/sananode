@@ -1,0 +1,3 @@
+FROM ipfs/go-ipfs
+COPY ./ipfsinit.sh /usr/local/bin/start_ipfs
+RUN chmod +x /usr/local/bin/start_ipfs

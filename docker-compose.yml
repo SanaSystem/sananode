@@ -1,21 +1,25 @@
 version: '3'
-
 services:
   ipfs:
-    image: tornadoalert/go-ipfs-cors
-    ports:
-    - "5001:5001"
+    build:
+      context: .
+      dockerfile: "ipfsbuild_${ARCH}"
+    ports: 
+      - '5001:5001'
+      - '4001:4001'
+      - '4002:4002/udp'
+      - '8081:8081'
     volumes:
     - ipfs-data:/data/ipfs
   rabbit:
     image: rabbitmq:alpine
   couchdb:
-    image: couchdb
+    image: ${COUCHDB}
     ports:
     - "5984:5984"
     environment:
-    - COUCHDB_USER=admin 
-    - COUCHDB_PASSWORD=admin
+    - COUCHDB_USER=${COUCH_USER}
+    - COUCHDB_PASSWORD=${COUCH_PASSWORD}
     volumes:
       - couchdb-data:/opt/couchdb/data
       - ./config/couchdb.ini:/opt/couchdb/etc/local.ini
