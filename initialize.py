@@ -3,14 +3,6 @@ import time
 import subprocess
 import os, sys, shutil
 import platform
-
-try:
-  import requests
-except ImportError:
-  print("Trying to Install required module: requests")
-  os.system('python -m pip install requests')
-# -- above lines try to install requests module if not present
-# -- if all went well, import required module again ( for global access)
 import requests
 
 
