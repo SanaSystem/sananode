@@ -133,7 +133,6 @@ def main():
     print("[+] Running migrations for Django")
     subprocess.call(command(["docker-compose", "exec", "web", "python", "manage.py", "makemigrations"]), shell=True)
     subprocess.call(command(["docker-compose", "exec", "web", "python", "manage.py", "migrate"]), shell=True)
-    subprocess.call(command(["docker-compose", "exec", "web", "python", "manage.py", "createsuperuser"]), shell=True)
     wait_for_couch_container()
     print("[+] Initializing couchDB databases")
     try:
