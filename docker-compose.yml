@@ -25,7 +25,7 @@ services:
       - ./config/couchdb.ini:/opt/couchdb/etc/local.ini
   worker:
     build: .
-    command: celery -A tasks worker --loglevel=info
+    command: celery -A sananode worker --loglevel=info
     volumes:
       - .:/code/
     depends_on:
