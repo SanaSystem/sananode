@@ -12,6 +12,8 @@ def decompose_medblocks(list_of_medblocks):
     for m in list_of_medblocks:
         medblock = m
         _id = medblock.pop('_id')
+        medblock.pop('_rev')
+        medblock.pop('type')
         body = {
             'id':_id,
             'tag':'body',

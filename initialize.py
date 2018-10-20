@@ -81,7 +81,11 @@ def initializa_couchdb(couch_username, couch_password):
         "list": {
         "map": "function (doc) {\n  emit(doc.creator.email, {\n    title: doc.title,\n    recipient: doc.recipient,\n    files: doc.files.length\n  });\n}",
         "reduce": "_count"
-        }
+        },
+        "patient": {
+        "map": "function (doc) {\n  emit(doc.recipient, null);\n}"
+        },
+
     },
     "language": "javascript"
     }
