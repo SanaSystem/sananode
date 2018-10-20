@@ -33,7 +33,7 @@ def serialize_decomposed(decomposed_list):
         }
         strict = True
         if strict:
-            if obj['tag'] not in tag_list.keys():
+            if obj['tag'] not in tag_list.values():
                 continue
         serialized.append(obj)
     return serialized

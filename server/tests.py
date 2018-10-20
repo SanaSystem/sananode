@@ -10,5 +10,4 @@ class TestIotaFunctions(TestCase):
         medblock2 = json.loads(test_medblock_string)
         for i in serialize_decomposed(decompose_medblocks([medblock, medblock2])):
             print(i['tag'])
-
-    
+            
