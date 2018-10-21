@@ -1,5 +1,6 @@
 import iota
 import json
+from itertools import groupby
 iotaNode = "https://field.deviota.com:443"
 
 seed = ""
@@ -7,11 +8,13 @@ api = iota.Iota(iotaNode, seed)
 
 tag_list = {
     'register' : 'VHXGXMNKDBSCVZHZKQNONMC9EQN',
-    'body' : 'DSYT9KYMQOLBPPRRMARRBHDQYNA',
-    'key': 'IZZX9MBFYQQFVQGMPPGPTQHQPWE',
+    'body' : 'DSYT9KYMQILBPPRRMARRBHDQYNA',
+    'key': 'IZZXPMBFYQQFVQGMPPGPTQHQPWE',
     'permission': 'CZLRLSSZZIKEAUTLLBFXYEDFMWO',
-    'file': 'AZLRLSSZZIKEAUTLLBFXYEDFMWO'
+    'file': 'AZLRLSSZZIKJAUTLLBFXYEDFMWO'
 }
+
+reverse_tag_list = {v:k for k,v in tag_list.items()}
 
 def random_address():
     return iota.Address.random(81)
@@ -38,35 +41,53 @@ def serialize_decomposed(decomposed_list):
         serialized.append(obj)
     return serialized
 
-def deserialize_decomposed(decomposed_list):
-    deseriazed = []
-    for e in decomposed_list:
-        e['data']
-        
-
-def send_message(address, tag, message):
-    message = iota.TryteString.from_string(message)
-    tag = iota.Tag.from_string(tag)
-    address = iota.Address.from_string(address)
-    txn = iota.ProposedTransaction(
-        address=address,
-        message=message,
-        tag=tag,
-        value=0
-    )
-    txn = api.send_transfer(depth=3, transfers=[txn])
-    return txn
-
-def recieve_messages(address, tag):
-    tag = iota.Tag.from_string(tag)
-    address = iota.Address.from_string(address)
-    txns = api.find_transactions(tags=[tag], addresses=[address])['hashes']
-    #print(txns)
+def dict_to_txns(serialized_list):
+    txns = []
+    for e in serialized_list:
+        txn = iota.ProposedTransaction(
+            address = e['address'],
+            message=e['data'],
+            tag=e['tag'],
+            value=0
+        )
+        txns.append(txn)
     return txns
 
-def decode_messages(txns):
+
+def broadcast_on_tangle(decomposed_list):
+    serialized = serialize_decomposed(decomposed_list)
+    txns = dict_to_txns(serialized)
+    bundles = []
+    for txn in txns:
+        bundle = api.send_transfer(depth=3, transfers = [txn])
+        bundles.append(bundle)
+    
+    return bundles
+
+def retrieve_from_tangle(email):
+    address = iota.Address.from_string(email)
+    hashes = api.find_transactions(addresses=[address], tags=list(tag_list.values()))['hashes']
+    trytes = api.get_trytes(hashes)['trytes']
+    txns = [iota.Transaction.from_tryte_string(t) for t in trytes]
+    # print("Total transactions: {}".format(len(txns)))
+    unique_bundles = set(map(lambda txn:txn.bundle_hash, txns))
+    # print("Found {} bundles: {}".format(len(unique_bundles), unique_bundles))
+    data = []
+    messages = [[(txn.signature_message_fragment, txn.current_index) for txn in txns if txn.bundle_hash==h] for h in unique_bundles]
+    
+    for message in messages:
+        m = ""
+        for i in sorted(message, key=lambda txn:txn[1]):
+            m += str(i[0])
+
+        string = iota.TryteString(m).decode()
+        data.append(json.loads(string))
+    return data
+
+
+def decode_messages(hashes):
     """Returns a list of decodable messages"""
-    tryts = api.get_trytes(txns)['trytes']
+    tryts = api.get_trytes(hashes)['trytes']
     fail_count = 0
     messages = []
     for t in tryts:
