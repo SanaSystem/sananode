@@ -1,6 +1,6 @@
 from celery import shared_task, task
-from .utils import decompose_medblocks
-from .blockchain import serialize_decomposed, dict_to_txns
+from .utils import decompose_medblocks, to_set
+from .blockchain import retrieve_from_tangle
 import requests
 import json
 
@@ -9,26 +9,32 @@ import json
 @task
 def check_iota_sync(email):
     # list all documents associated with user
-    medblocks_on_disk = []
+    """
+    requests.get("_degign/preview/...?key=email")
+    """
     # Decompose document into constituants
-    decomposed_medblocks_on_disk = [[], [], []]
-    # Get associated registered addresses on IOTA
+    
+    db = decompose_medblocks
     
     # Get all associated transactions with address
+    iota_db = retrieve_from_tangle
 
-    # Decode txns
-    decomposed_medblocks_on_iota = [[], [], []]
+    transmit_to_iota = iota_db - db
 
-    # set.symmetric_difference, from where to where
+    reconstruct_new_document = iota_db + db
 
     # Trigger iota update
+    broadcast_on_tangle.delay(transmit_to_iota)
 
     # Trigger couchdb update
-
+    """
+    get(id)
+    put(id, rev)
+    """
     pass
 
 @task 
-def check_ipfs_sync(email):
+def check_sync(email):
     # Check IPFS sync
 
     # Check Pin status
