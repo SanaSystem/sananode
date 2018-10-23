@@ -103,7 +103,7 @@ def bootstrap_ipfs():
 def copy_env(platform):
     platform = platform[:3].lower()
     if platform not in ['amd', 'arm']:
-        print("[-] Not arm or amd...No .env matching .env file found")
+        print("[-] Not arm or amd...")
         return
     if platform == 'amd':
         print("[+] Copying environment file for AMD")
