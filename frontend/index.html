@@ -102,8 +102,8 @@
                               
                               </div>
                         <div class="content">
-                            <p class="subtitle">CouchDB node: <span class="has-text-success has-text-weight-bold">Running</span></p>
-                            <p class="subtitle">IPFS node: <span class="has-text-success has-text-weight-bold">Running</span></p>
+                            <p class="subtitle">CouchDB node: <span class="has-text-success has-text-weight-bold" v-if="stats.isCouchDBRunning">Running</span><span class="has-text-danger has-text-weight-bold"v-else>Not Running</span></p>
+                            <p class="subtitle">IPFS node: <span class="has-text-success has-text-weight-bold" v-if="stats.isIPFSRunning">Running</span><span class="has-text-danger has-text-weight-bold"v-else>Not Running</span></p>
                             <p class="subtitle">Node IP Address: <span class="has-text-black has-text-weight-bold">{{ipAddress}}</span></p>
                         </div>
                     </div>
@@ -114,7 +114,7 @@
                             <div class="level-left">
                                 <div class="level-item">
                                 <p class="subtitle is-5">
-                                    <strong>2</strong> records
+                                    <strong>{{stats.numberofrecords}}</strong> records
                                 </p>
                                 </div>
                             
@@ -145,6 +145,7 @@
                                   <tr>
                                     <th>Title</th>
                                     <th>From</th>
+                                    <th>To</th>
                                     <th>Files</th>
                                     <th></th>
                                   </tr>
@@ -153,11 +154,12 @@
                                     <tr v-for="item in records.list">
                                         <td>{{item.title}}</td>
                                         <td>{{item.from}}</td>
+                                        <td>{{item.to}}</td>
                                         <td>{{item.files}}</td>
-                                        <td><a v-if="currentUser.user && item.to === currentUser.email" class="button is-info" @click="handleOpenRecord(item)">View</a></td>
+                                        <td><a v-if="item.permissionstatus === 1" class="button is-info" @click="handleOpenRecord(item)">View</a><a v-else-if="item.permissionstatus === 2" class="button is-danger is-loading">Ask Permission</a><a v-else-if="item.permissionstatus === 3" class="button is-danger" @click="handleRequestRecordPermission(item)">Ask Permission</a></td>
                                     </tr>
                                     <tr>
-                                        <td class="has-text-centered" colspan="4" v-if="records.loader" @click="handleLoadMoreRecords">Load More Records</td>
+                                        <td class="has-text-centered" style="cursor: pointer;" colspan="5" v-if="records.loader" @click="handleLoadMoreRecords">Load More Records</td>
                                     </tr>
                                 </tbody>
                         </table>
@@ -175,6 +177,7 @@
                     <!-- Notifications -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'notifications')}">
                         <h1 class="title">Notifications</h1>
+                        
                     </div>
                     <!-- Manage Keys -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'managekeys')}">
@@ -202,17 +205,11 @@
                                     </div>
                                 </div>
                                 <div class="field">
-                                    <label for="" class="label">Password</label>
-                                    <div class="control">
-                                        <input type="password" required v-model="formData.newUser.password" class="input" placeholder="********"/>
-                                    </div>
-                                </div>
-                                <div class="field">
                                     <label for="" class="label">Keys</label>                              
                                 </div>
                                 <div class="field has-addons">
                                         <div class="control is-expanded">
-                                          <input required class="input" v-model="formData.newUser.privateKey.d" type="text" placeholder="Click on Genarate to get a random key">
+                                          <input required class="input" v-model="formData.newUser.privateKey.p" type="text" placeholder="Click on Genarate to get a random key">
                                         </div>
                                         <div class="control">   
                                           <a class="button" v-on:click="generateKey">

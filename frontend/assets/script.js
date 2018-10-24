@@ -10,7 +10,9 @@
 const DATA = {
     current: 'records',
     stats: {
-        numberofrecords: 0
+        numberofrecords: 0,
+        isCouchDBRunning: false,
+        isIPFSRunning: false
     },
     currentUser: {
         publicKey: '',
@@ -22,7 +24,7 @@ const DATA = {
     },
     records: {
         list: [],
-        skip: 0,
+        startkey: "",
         loader: true,
         step: 3
     },
@@ -87,11 +89,8 @@ async function setUser (userjson) {
     else {
         email = prouser.email;
     }
-    if (prouser.email !== "") {
-        password = prompt('You are currently logged in as ' + email + '. Please confirm your password.');
-        if (password === null) {
-            flag = false;
-        }
+    if (prouser.email !== "" && prouser.privateKey.p) {
+        password = prouser.privateKey.p.slice(0, 20);
     }
     // Check flag
     if (flag === true) {
@@ -108,7 +107,9 @@ async function setUser (userjson) {
                 DATA.currentUser.user = true;
                 // Save
                 let currentuserstr = await stringifyCurrentUser();
-                Database.setUser(currentuserstr);
+                await Database.setUser(currentuserstr);
+                // Run through record permissions
+                await setRecordPermissions(DATA.records.list);
             }
         }
         catch (e) {
@@ -135,9 +136,11 @@ async function clearUser () {
     DATA.currentUser.user = false;
     // Save
     let currentuserstr = await stringifyCurrentUser();
-    Database.setUser(currentuserstr);
+    await Database.setUser(currentuserstr);
     // Signout of pouchdb
-    Database.signOut();
+    await Database.signOut();
+    // Run through record permissions
+    await setRecordPermissions(DATA.records.list);
 };
 function downloadObjectAsJson (exportObj, exportName) {
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
@@ -251,10 +254,10 @@ async function getFileTreeFromHashTree (filelist, aeskey) {
 };
 async function getRecordsBatch () {
     try {
-        let records = await Database.fetchRecords(DATA.records.step, DATA.records.skip);
+        let records = await Database.fetchRecords(DATA.records.step, DATA.records.startkey);
         if (records.length > 0) {
-            // Set the skip
-            DATA.records.skip += records.length;
+            // Set the startkey
+            DATA.records.startkey = records[records.length - 1].id;
         }
         // Check if the length > step
         if (records.length < DATA.records.step) {
@@ -279,11 +282,51 @@ async function decryptPossible (publickey) {
 async function updateRecords () {
     try {
         let records = await getRecordsBatch();
+        await setRecordPermissions(records);
         DATA.records.list = DATA.records.list.concat(records);
     }
     catch (e) {
         throw e;
     }
+};
+async function setRecordPermissions (recordlist) {
+    // Check if not an array
+    if (!(recordlist instanceof Array)) {
+        recordlist = [recordlist];
+    }
+    let userkey;
+    if (DATA.currentUser.user) {
+        // Get current user rsa key
+        userkey = await Encrypt.exportRSAKey(DATA.currentUser.publicKey);
+        userkey = JSON.stringify(userkey);
+    }
+    // run through each record and put if permitted or not
+    recordlist.forEach(function (record) {
+        if (userkey) {
+            // map out all the keys to json
+            let keys = record.keys.map(key => JSON.stringify(key.RSAPublicKey));
+            if (keys.indexOf(userkey) === -1) {
+                // map out all the permissions to json
+                let permissions = record.permissions.map(perm => JSON.stringify(perm));
+                if (permissions.indexOf(userkey) === -1) {
+                    // Can ask for permission
+                    record.permissionstatus = 3;                    
+                }
+                else {
+                    // Asked for permission already
+                    record.permissionstatus = 2;
+                }
+            }
+            else {
+                // User has permission
+                record.permissionstatus = 1;
+            }
+        }
+        else {
+            // User not signed in
+            record.permissionstatus = 0;
+        }
+    });
 };
 async function displayRecord (record) {
     // Open Modal Window
@@ -318,14 +361,39 @@ async function displayRecord (record) {
         DATA.formData.viewRecord.status = -1;
     }
 };
+function isCouchDBRunning () {
+    axios
+        .get(porturl(5984))
+        .then(function (r) {
+            if (r.status === 200) {
+                DATA.stats.isCouchDBRunning = true;
+            }
+            else {
+                DATA.stats.isCouchDBRunning = false;
+            }
+        })
+        .catch(function () {
+            DATA.stats.isCouchDBRunning = false;
+        })
+};
+function isIPFSRunning () {
+    DATA.stats.isIPFSRunning = false;
+};
 
 var main = new Vue({
     el: '#app',
     data: DATA,
-    async created() {
+    async mounted () {
         // Set current stats
-        let numberofrecords = await Database.numberOfRecords();
-        this.stats.numberofrecords = numberofrecords.rows[0].value;
+        isCouchDBRunning();
+        isIPFSRunning();
+        try {
+            let numberofrecords = await Database.numberOfRecords();
+            this.stats.numberofrecords = numberofrecords.rows[0].value;
+        }
+        catch (e) {
+            throw e;
+        }
         // User
         try {
             // Set the current user if any
@@ -349,7 +417,7 @@ var main = new Vue({
         },
         handleUserSubmit () {
             // Sign up user to CouchDB
-            Database.signUp(this.formData.newUser.email, this.formData.newUser.password, {
+            Database.signUp(this.formData.newUser.email, this.formData_newUser_password, {
                 username: this.formData.newUser.name,
                 publicKey: this.formData.newUser.publicKey
             })
@@ -441,6 +509,7 @@ var main = new Vue({
                     ],
                     format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
                     type: 'medblock',
+                    permissions: [],
                     creator: {
                         publicKey: currentuserKey,
                         email: this.currentUser.email
@@ -448,11 +517,24 @@ var main = new Vue({
                     recipient: this.formData.uploadRecords.recipient
                 };
                 // Post to database
-                Database.postNewMedblock(medblockobj);
+                let newblock = await Database.postNewMedblock(medblockobj);
                 // Cleanup
                 document.querySelector('#newRecord').classList.remove('is-active');
                 document.querySelector('#uploadRecords-submit').classList.remove('is-loading');
                 document.querySelector('#uploadRecords-submit').removeAttribute('disabled');
+                // Update records list
+                console.log(newblock);
+                let rec = {
+                    id: newblock._id,
+					from: newblock.creator.email,
+					to: newblock.recipient,
+					title: newblock.title,
+					files: newblock.files.length,
+					permissions: newblock.permissions,
+					keys: newblock.keys
+                };
+                await setRecordPermissions(rec);
+                this.records.list.unshift(rec);
             }
             else {
                 // TODO Show notification error
@@ -466,12 +548,6 @@ var main = new Vue({
             let files = await getFiles();
             let filesarr = Array.from(files).map(file => file);
             this.formData.uploadRecords.files.splice(this.formData.uploadRecords.files.length, 0, ...filesarr);
-            // let samplefile = filesarr[0];
-            // const reader = new FileReader();
-            // reader.onload = e => {
-            //     console.log(e.target.result);
-            // };
-            // reader.readAsText(samplefile);
         },
         handleRecordDelete (item) {
             this.formData.uploadRecords.files.splice(this.formData.uploadRecords.files.indexOf(item), 1);
@@ -508,6 +584,17 @@ var main = new Vue({
             // Zip the files
             await generateZipFileFromRecord();
         },
+        async handleRequestRecordPermission  (item) {
+            let userkey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+            // Check if permission isn't already there
+            let userkey_ = JSON.stringify(userkey);
+            let permissions = item.permissions.map(perm => JSON.stringify(perm));
+            if (permissions.indexOf(userkey_) === -1) {
+                await Database.addPermission(item.id, userkey);
+            }
+            // change item permission status
+            item.permissionstatus = 2;
+        },
         // ReWrite
         loadTextFromFile(ev) {
             const file = ev.target.files[0];
@@ -520,5 +607,10 @@ var main = new Vue({
         signOut () {
             clearUser();
         }
+    },
+    computed: {
+        formData_newUser_password: function () {
+            return this.formData.newUser.privateKey.p.slice(0, 20);
+        }
     }
-})
+});

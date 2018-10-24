@@ -1,11 +1,15 @@
+(function () {
 	const GENERAL = PouchDB('generaldata');
-	const MEDBLOCK = PouchDB(porturl(5984) + '/medblocks/', {
-		fetch: function (url, opts){
-		  opts.credentials = 'include';
-		  return PouchDB.fetch(url, opts);
-		}
-	});
+	let MEDBLOCK;
 
+	function setUp () {
+		MEDBLOCK = PouchDB(porturl(5984) + '/medblocks/', {
+			fetch: function (url, opts){
+			opts.credentials = 'include';
+			return PouchDB.fetch(url, opts);
+			}
+		});
+	};
 	// // Sync for GENERAL.userlist
 	// // TODO make sync automatic
 	// async function syncGeneralUserlist () {
@@ -17,11 +21,11 @@
 	// 		await GENERAL.put(userlist);
 	// 	}
 	// 	catch (e) {
-	// 		if (e.status === 404) {
-	// 			await GENERAL.put({
-	// 				data: users,
-	// 				_id: 'userlist'
-	// 			});
+	// 		if (e.status === 404) {										\   \	   ____      /  /
+	// 			await GENERAL.put({										 \   \    /    \    /  /
+	// 				data: users,										  \   \  /  __  \  /  /
+	// 				_id: 'userlist'										   \   V   /  \  V  /
+	// 			});															\____/     \___/
 	// 		}
 	// 		else {
 	// 			throw e;
@@ -132,20 +136,24 @@
 			catch (e) {
 				throw e;
 			}
+			return await MEDBLOCK.get(uuid[0]);
 		},
-		async fetchRecords (lim = 10, skip = 0) {
+		async fetchRecords (step = 5, startkey = "") {
 			let res = await MEDBLOCK.query('preview/list', {
-				limit: lim,
-				skip: skip,
+				startkey: startkey,
+				limit: step,
+				skip: (startkey === "" ? 0 : 1),
 				reduce: false
 			});
 			let results = res.rows.map(function (block) {
 				return {
 					id: block.id,
-					from: block.key,
+					from: block.value.creator,
 					to: block.value.recipient,
 					title: block.value.title,
-					files: block.value.files
+					files: block.value.files,
+					permissions: block.value.permissions,
+					keys: block.value.keys
 				};
 			});
 			return results;
@@ -162,9 +170,17 @@
 			catch (e) {
 				throw e;
 			}
+		},
+		async addPermission (id, rsakey) {
+			let block = await MEDBLOCK.get(id);
+			block.permissions.push(rsakey);
+			await MEDBLOCK.put(block);
 		}
 	};
 
 	// syncGeneralUserlist();
 
+	setUp();
+
 	window.Database = DATABASE;
+})();

@@ -1,6 +1,6 @@
 (function () {
 	// Connect to IPFS Node
-	let NODE = IpfsApi(`${location.hostname}`, 5001);
+	let NODE = IpfsApi(porturl(5001, true), '5001');
 
 	let IPFS = {
 		// COMBAK
