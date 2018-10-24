@@ -1,3 +1,4 @@
+(function () {
 	// STRING/ARRAY BUFFER HELPER FUNCTIONS
 	function stringToArrayBuffer (str) {
 		var buf = new ArrayBuffer(str.length * 2);
@@ -201,3 +202,4 @@
 		}
 	};
 	window.Encrypt = ENCRYPT;
+})();
