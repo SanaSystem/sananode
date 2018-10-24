@@ -73,7 +73,6 @@
                         <ul class="menu-list">
                             <li><a v-bind:class="{'is-active': (current == 'status')}" @click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
                             <li><a v-bind:class="{'is-active': (current == 'records')}" @click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'peers')}" @click="current = 'peers'"><span class="icon"><i class="fas fa-bezier-curve"></i></span>Peers</a></li>
                             <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
                         </ul>
                     </aside>
@@ -163,11 +162,6 @@
                                     </tr>
                                 </tbody>
                         </table>
-                    </div>
-                    <!-- Peers -->
-                    <!-- Load from NodeRegistration model -->
-                    <div class="column" v-bind:class="{'is-hidden': (current !== 'peers')}">
-                        <h1 class="title">Peers</h1>
                     </div>
                     <!-- Settings -->
                     <!-- Select network -->
