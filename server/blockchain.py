@@ -67,6 +67,8 @@ def broadcast_on_tangle(decomposed_list):
 def retrieve_from_tangle(email):
     address = iota.Address.from_string(email)
     hashes = api.find_transactions(addresses=[address], tags=list(tag_list.values()))['hashes']
+    if len(hashes) == 0:
+        return []
     trytes = api.get_trytes(hashes)['trytes']
     txns = [iota.Transaction.from_tryte_string(t) for t in trytes]
     # print("Total transactions: {}".format(len(txns)))

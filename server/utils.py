@@ -1,11 +1,13 @@
 import json
 
+def to_set(list_of_objs):
+    return set([json.dumps(obj, sort_keys=True) for obj in list_of_objs])
+
+def to_dict_list(set_of_json):
+    return [json.loads(string) for string in set_of_json]
+
 def remove_duplicates(decomposed_list):
-    decomp_set = set() 
-    for e in decomposed_list:
-        decomp_set.add(json.dumps(e, sort_keys=True))
-    # print("Found {} duplicates".format(len(decomposed_list) - len(decomp_set)))
-    return [json.loads(i) for i in decomp_set]
+    return to_dict_list(to_set(decomposed_list))
 
 def decompose_medblocks(list_of_medblocks):
     decomposed = []
@@ -43,6 +45,19 @@ def decompose_medblocks(list_of_medblocks):
             }
             decomposed.append(f)
         other_keys = medblock.keys()
+
+        try:
+            permissions = medblock.pop('permissions')
+        except KeyError:
+            permissions = []
+        for permission in permissions:
+            p = {
+                'id':_id,
+                'tag':'permission',
+                'data':json.dumps(permission),
+                'recipient': body['recipient']
+            }
+            decomposed.append(p)
         # print("Medblock: {}\nOther keys: {}".format(_id, other_keys))
         for key in other_keys:
             element = medblock[key]
@@ -54,5 +69,38 @@ def decompose_medblocks(list_of_medblocks):
             }
             decomposed.append(frag)
         # remove duplicates
+    
     decomposed = remove_duplicates(decomposed)
     return decomposed
+
+def reconstruct_medblocks(decomposed_list):
+    # To Do
+    # Add 'type'
+    # Add '_id'
+
+    # Group by id
+    for medfrag_iterator, _id in groupby([], key=lambda x: x['id']):
+        medblock = {
+            'keys': [],
+            'files': [],
+            'permissions': []
+        }
+        for medfrag in medfrag_iterator:
+            if medfrag['tag'] == 'body':
+                medblock['id']=_id,
+                medblock['tag']='body',
+                medblock['creator']=medfrag['creator'],
+                medblock['format']= medfrag['format']
+                medblock['recipient']=medfrag['recipient'],
+                medblock['title']=medfrag['title']
+            if medfrag['tag'] == 'key':
+                medblock['keys'].append(json.loads(medfrag['data']))
+            if medfrag['tag'] == 'file':
+                medblock['files'].append(json.loads(medfrag['data']))
+            if medfrag['tag'] == 'permission':
+                medblock['permissions'].append(json.loads(medfrag['data']))
+            else:
+                medblock[medfrag['tag']] = json.loads(medfrag['data'])
+
+    return
+

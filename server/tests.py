@@ -2,6 +2,7 @@ from django.test import TestCase
 from .utils import decompose_medblocks
 from .blockchain import broadcast_on_tangle, retrieve_from_tangle, tag_list
 import json
+from .tasks import check_iota_sync
 # Create your tests here.
 class TestIotaFunctions(TestCase):
     def test_iota_sync(self):
@@ -18,3 +19,6 @@ class TestIotaFunctions(TestCase):
             assert d not in tag_list.keys()
 
 
+    def test_task(self):
+        check_iota_sync("boo@test.com", "http://192.168.0.107:5984")
+        
