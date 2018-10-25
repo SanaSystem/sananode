@@ -171,10 +171,31 @@
 				throw e;
 			}
 		},
-		async addPermission (id, rsakey) {
+		async addPermission (id, rsakey, useremail) {
+			let uuid = await axios.get(porturl(5984) + '/_uuids?count=1');
+			uuid = uuid.data.uuids;
 			let block = await MEDBLOCK.get(id);
-			block.permissions.push(rsakey);
+			block.permissions.push({
+				RSAPublicKey: rsakey,
+				email: useremail,
+				id: uuid
+			});
 			await MEDBLOCK.put(block);
+		},
+		async getPermissionRequests (useremail) {
+			let perms = await MEDBLOCK.query('preview/permissions', {
+				key: useremail,
+				include_docs: true
+			});
+			let reqs = perms.rows.map(function (perm) {
+				return {
+					id: perm.id,
+					reqkey: perm.value.permission,
+					title: perm.value.title,
+					requester: perm.value.requester
+				};
+			});
+			return reqs;
 		}
 	};
 

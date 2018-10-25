@@ -28,6 +28,7 @@ const DATA = {
         loader: true,
         step: 3
     },
+    notifications: [],
     ipAddress: '',
     formData: {
         newUser: {
@@ -53,6 +54,7 @@ const DATA = {
         }
     }
 };
+let TIMER = "";
 
 async function stringifyCurrentUser () {
     // Clone object
@@ -110,6 +112,11 @@ async function setUser (userjson) {
                 await Database.setUser(currentuserstr);
                 // Run through record permissions
                 await setRecordPermissions(DATA.records.list);
+                // Get permissions and setup permission polling
+                TIMER = setInterval(function () {
+                    getPermissionRequests(DATA.currentUser.email);
+                }, 120000);
+                getPermissionRequests(DATA.currentUser.email);
             }
         }
         catch (e) {
@@ -141,6 +148,9 @@ async function clearUser () {
     await Database.signOut();
     // Run through record permissions
     await setRecordPermissions(DATA.records.list);
+    // Clear Permissions polling
+    clearInterval(TIMER);
+    DATA.notifications = [];
 };
 function downloadObjectAsJson (exportObj, exportName) {
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
@@ -270,14 +280,18 @@ async function getRecordsBatch () {
         throw e;
     }
 };
-async function decryptPossible (publickey) {
+async function decryptPossible (publickeys) {
     let currentUserKey = await Encrypt.exportRSAKey(DATA.currentUser.publicKey);
-    if (currentUserKey.n === publickey.n) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    let currentUserKey_str = JSON.stringify(currentUserKey);
+    let found = publickeys.find(function (key) {
+        if (JSON.stringify(key.RSAPublicKey) === currentUserKey_str) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    });
+    return found;
 };
 async function updateRecords () {
     try {
@@ -339,11 +353,11 @@ async function displayRecord (record) {
     // Set state to 0
     DATA.formData.viewRecord.status = 0;
     // Check if decryption is possible
-    let possible = await decryptPossible(record.keys[0].RSAPublicKey);
+    let possible = await decryptPossible(record.keys);
     if (possible) {
         try {
             // Decrypt AES Key
-            let AESKey = await Encrypt.decryptRSAStringFromArray(record.keys[0].encryptedAESKey, DATA.currentUser.privateKey);
+            let AESKey = await Encrypt.decryptRSAStringFromArray(possible.encryptedAESKey, DATA.currentUser.privateKey);
             DATA.formData.viewRecord.decryptionStatus += 20;
             // create File Tree from IPFS
             let files = await getFileTreeFromHashTree(record.files, AESKey);
@@ -379,6 +393,10 @@ function isCouchDBRunning () {
 function isIPFSRunning () {
     DATA.stats.isIPFSRunning = false;
 };
+async function getPermissionRequests (usermail) {
+    let perms = await Database.getPermissionRequests(usermail);
+    DATA.notifications = perms;
+};
 
 var main = new Vue({
     el: '#app',
@@ -389,7 +407,12 @@ var main = new Vue({
         isIPFSRunning();
         try {
             let numberofrecords = await Database.numberOfRecords();
-            this.stats.numberofrecords = numberofrecords.rows[0].value;
+            if (numberofrecords.rows.length > 0) {
+                this.stats.numberofrecords = numberofrecords.rows[0].value;
+            }
+            else {
+                this.stats.numberofrecords = 0;
+            }
         }
         catch (e) {
             throw e;
@@ -496,6 +519,7 @@ var main = new Vue({
                 let enAESkey = await Encrypt.encryptRSAStringToArray(proAESkey, recipientKey);
                 // Current user key
                 let currentuserKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+                let enAESkey_current = await Encrypt.encryptRSAStringToArray(proAESkey, this.currentUser.publicKey);
                 // console.log(proAESkey, enAESkey);
                 // Create Medblock object
                 let medblockobj = {
@@ -505,6 +529,10 @@ var main = new Vue({
                         {
                             RSAPublicKey: user.publicKey,
                             encryptedAESKey: enAESkey
+                        },
+                        {
+                            RSAPublicKey: currentuserKey,
+                            encryptedAESKey: enAESkey_current
                         }
                     ],
                     format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
@@ -523,7 +551,6 @@ var main = new Vue({
                 document.querySelector('#uploadRecords-submit').classList.remove('is-loading');
                 document.querySelector('#uploadRecords-submit').removeAttribute('disabled');
                 // Update records list
-                console.log(newblock);
                 let rec = {
                     id: newblock._id,
 					from: newblock.creator.email,
@@ -535,6 +562,19 @@ var main = new Vue({
                 };
                 await setRecordPermissions(rec);
                 this.records.list.unshift(rec);
+                // Number of Records
+                try {
+                    let numberofrecords = await Database.numberOfRecords();
+                    if (numberofrecords.rows.length > 0) {
+                        this.stats.numberofrecords = numberofrecords.rows[0].value;
+                    }
+                    else {
+                        this.stats.numberofrecords = 0;
+                    }
+                }
+                catch (e) {
+                    throw e;
+                }
             }
             else {
                 // TODO Show notification error
@@ -586,11 +626,12 @@ var main = new Vue({
         },
         async handleRequestRecordPermission  (item) {
             let userkey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+            let useremail = this.currentUser.email;
             // Check if permission isn't already there
             let userkey_ = JSON.stringify(userkey);
             let permissions = item.permissions.map(perm => JSON.stringify(perm));
             if (permissions.indexOf(userkey_) === -1) {
-                await Database.addPermission(item.id, userkey);
+                await Database.addPermission(item.id, userkey, useremail);
             }
             // change item permission status
             item.permissionstatus = 2;
