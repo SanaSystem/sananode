@@ -4,34 +4,13 @@
 
 	function setUp () {
 		MEDBLOCK = PouchDB(porturl(5984) + '/medblocks/', {
-			fetch: function (url, opts){
-			opts.credentials = 'include';
-			return PouchDB.fetch(url, opts);
+			fetch: function (url, opts) {
+				opts.credentials = 'include';
+				return PouchDB.fetch(url, opts);
 			}
 		});
+		console.log(MEDBLOCK);
 	};
-	// // Sync for GENERAL.userlist
-	// // TODO make sync automatic
-	// async function syncGeneralUserlist () {
-	// 	let users = await axios.get(porturl(8000) + '/users/');
-	// 	users = users.data;
-	// 	try {
-	// 		let userlist = await GENERAL.get('userlist');
-	// 		userlist.data = users;
-	// 		await GENERAL.put(userlist);
-	// 	}
-	// 	catch (e) {
-	// 		if (e.status === 404) {										\   \	   ____      /  /
-	// 			await GENERAL.put({										 \   \    /    \    /  /
-	// 				data: users,										  \   \  /  __  \  /  /
-	// 				_id: 'userlist'										   \   V   /  \  V  /
-	// 			});															\____/     \___/
-	// 		}
-	// 		else {
-	// 			throw e;
-	// 		}
-	// 	}
-	// };
 
 	let DATABASE = {
 		async getUser () {
@@ -214,12 +193,9 @@
 			let block = await MEDBLOCK.get(docid);
 			block.denied.push(permid);
 			await MEDBLOCK.put(block);
-		}
+		},
+		setUp: setUp
 	};
-
-	// syncGeneralUserlist();
-
-	setUp();
 
 	window.Database = DATABASE;
 })();

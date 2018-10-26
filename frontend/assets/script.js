@@ -8,7 +8,7 @@
 // })
 
 const DATA = {
-    current: 'notifications',
+    current: 'settings',
     stats: {
         numberofrecords: 0,
         isCouchDBRunning: false,
@@ -30,6 +30,7 @@ const DATA = {
     },
     notifications: [],
     ipAddress: '',
+    ipAddressValid: false,
     formData: {
         newUser: {
             publicKey: '',
@@ -55,6 +56,18 @@ const DATA = {
     }
 };
 let TIMER = "";
+
+function porturl (port, pruned = false) {
+    switch (port) {
+        case 5984:
+        case 5001:
+            return `${pruned === true ? `` : `http://`}${DATA.ipAddress}${ pruned === true ? `` : `:${port}`}`;
+            break;
+        default:
+            return `${location.protocol}//${location.hostname}${ pruned === true ? `` : `:${port}`}`;
+            break;
+    }
+};
 
 async function stringifyCurrentUser () {
     // Clone object
@@ -424,41 +437,100 @@ async function getPermissionRequests (usermail) {
     let perms = await Database.getPermissionRequests(usermail);
     DATA.notifications = perms;
 };
+async function setIpAdress (address) {
+    let flag = true;
+    // check if pouch is running
+    try {
+        let couchdb = await axios.get(`http://${address}:5984`);
+        console.log(couchdb);
+        if (couchdb.data.vendor.name !== "Medblocks") {
+            flag = false;
+        }
+    }
+    catch (e) {
+        console.log(e);
+        flag = false;
+    }
+    // check if ipfs is running
+    try {
+        let ipfs = IpfsApi(address, 5001);
+        let id = await ipfs.id();
+        if (id.protocolVersion !== "ipfs/0.1.0") {
+            flag = false;
+        }
+    }
+    catch (e) {
+        console.log(e);
+        flag = false;
+    }
+    // set ipAddressValid
+    if (flag === true) {
+        // Everything ok
+        DATA.ipAddressValid = true;
+        await onIpSet();
+    }
+    else {
+        // Everything not okay
+        DATA.ipAddressValid = false;
+        return false;
+    }
+};
+async function onIpSet () {
+    // Setups
+    Database.setUp();
+    IPFSUtils.setUp();
+    // Set current stats
+    try {
+        let numberofrecords = await Database.numberOfRecords();
+        if (numberofrecords.rows.length > 0) {
+            DATA.stats.numberofrecords = numberofrecords.rows[0].value;
+        }
+        else {
+            DATA.stats.numberofrecords = 0;
+        }
+    }
+    catch (e) {
+        throw e;
+    }
+    // User
+    try {
+        // Set the current user if any
+        let userjson = await Database.getUser();
+        setUser(userjson);
+    }
+    catch (e) {
+        // Clear the user
+        clearUser();
+        throw e;
+    }
+    DATA.stats.isCouchDBRunning = true;
+    DATA.stats.isIPFSRunning = true;
+    // Medblocks records
+    updateRecords();
+    // Open status page
+    this.current = 'status';
+}
 
 var main = new Vue({
     el: '#app',
     data: DATA,
-    async mounted () {
-        // Set current stats
-        isCouchDBRunning();
-        isIPFSRunning();
-        try {
-            let numberofrecords = await Database.numberOfRecords();
-            if (numberofrecords.rows.length > 0) {
-                this.stats.numberofrecords = numberofrecords.rows[0].value;
+    methods: {
+        handleCheckIp () {
+            if (/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gm.test(this.ipAddress)) {
+                setIpAdress(this.ipAddress);
             }
             else {
-                this.stats.numberofrecords = 0;
+                this.ipAddressValid = false;
             }
-        }
-        catch (e) {
-            throw e;
-        }
-        // User
-        try {
-            // Set the current user if any
-            let userjson = await Database.getUser();
-            setUser(userjson);
-        }
-        catch (e) {
-            // Clear the user
-            clearUser();
-            throw e;
-        }
-        // Medblocks records
-        updateRecords();
-    },
-    methods: {
+        },
+        changeTab: function (tabname) {
+            if (this.ipAddressValid) {
+                this.current = tabname;
+            }
+            else {
+                this.current = 'settings';
+            }
+        },
         // ReWrite
         async generateKey () {
             let keys = await Encrypt.newRSAKeys();

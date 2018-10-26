@@ -1,6 +1,10 @@
 (function () {
 	// Connect to IPFS Node
-	let NODE = IpfsApi(porturl(5001, true), '5001');
+	let NODE;
+
+	function setUp () {
+		NODE = IpfsApi(porturl(5001, true), '5001');
+	};
 
 	let IPFS = {
 		// COMBAK
@@ -29,7 +33,8 @@
 			let data = await NODE.get(hash);
 			data = data[0].content;
 			return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
-		}
+		},
+		setUp: setUp
 	};
 
 	window.IPFSUtils = IPFS;
