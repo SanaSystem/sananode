@@ -4,34 +4,13 @@
 
 	function setUp () {
 		MEDBLOCK = PouchDB(porturl(5984) + '/medblocks/', {
-			fetch: function (url, opts){
-			opts.credentials = 'include';
-			return PouchDB.fetch(url, opts);
+			fetch: function (url, opts) {
+				opts.credentials = 'include';
+				return PouchDB.fetch(url, opts);
 			}
 		});
+		console.log(MEDBLOCK);
 	};
-	// // Sync for GENERAL.userlist
-	// // TODO make sync automatic
-	// async function syncGeneralUserlist () {
-	// 	let users = await axios.get(porturl(8000) + '/users/');
-	// 	users = users.data;
-	// 	try {
-	// 		let userlist = await GENERAL.get('userlist');
-	// 		userlist.data = users;
-	// 		await GENERAL.put(userlist);
-	// 	}
-	// 	catch (e) {
-	// 		if (e.status === 404) {										\   \	   ____      /  /
-	// 			await GENERAL.put({										 \   \    /    \    /  /
-	// 				data: users,										  \   \  /  __  \  /  /
-	// 				_id: 'userlist'										   \   V   /  \  V  /
-	// 			});															\____/     \___/
-	// 		}
-	// 		else {
-	// 			throw e;
-	// 		}
-	// 	}
-	// };
 
 	let DATABASE = {
 		async getUser () {
@@ -153,6 +132,7 @@
 					title: block.value.title,
 					files: block.value.files,
 					permissions: block.value.permissions,
+					denied: block.value.denied,
 					keys: block.value.keys
 				};
 			});
@@ -171,16 +151,51 @@
 				throw e;
 			}
 		},
-		async addPermission (id, rsakey) {
+		async addPermission (id, rsakey, useremail) {
+			let uuid = await axios.get(porturl(5984) + '/_uuids?count=1');
+			uuid = uuid.data.uuids[0];
 			let block = await MEDBLOCK.get(id);
-			block.permissions.push(rsakey);
+			block.permissions.push({
+				RSAPublicKey: rsakey,
+				email: useremail,
+				id: uuid
+			});
 			await MEDBLOCK.put(block);
-		}
+		},
+		async getPermissionRequests (useremail) {
+			let perms = await MEDBLOCK.query('preview/permissions', {
+				key: useremail,
+				include_docs: true
+			});
+			let reqs = perms.rows.map(function (perm) {
+				return {
+					docid: perm.id,
+					reqkey: perm.value.permission,
+					title: perm.value.title,
+					requester: perm.value.requester,
+					permid: perm.value.id
+				};
+			});
+			return reqs;
+		},
+		async allowPermission (item, enAESkey) {
+			let block = await MEDBLOCK.get(item.docid);
+			// Put into keys
+			block.keys.push({
+				RSAPublicKey: item.reqkey,
+                encryptedAESKey: enAESkey
+			});
+			await MEDBLOCK.put(block);
+		},
+		async denyPermission (item) {
+			let docid = item.docid;
+			let permid = item.permid;
+			let block = await MEDBLOCK.get(docid);
+			block.denied.push(permid);
+			await MEDBLOCK.put(block);
+		},
+		setUp: setUp
 	};
-
-	// syncGeneralUserlist();
-
-	setUp();
 
 	window.Database = DATABASE;
 })();

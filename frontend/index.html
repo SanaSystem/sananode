@@ -31,12 +31,7 @@
                                 {{currentUser.name}}
                             </div>
                             <div class="navbar-dropdown">
-                                <a class="navbar-item" @click="current = 'notifications'">
-                                    <div>
-                                    Notifications
-                                    </div>
-                                </a>
-                                <a class="navbar-item" @click="current = 'managekeys'">
+                                <a class="navbar-item" @click="changeTab('managekeys')">
                                     <div>
                                     Manage Keys
                                     </div>
@@ -49,7 +44,7 @@
                             </div>         
                     </div>
                     <!-- If not logged in -->
-                    <div v-else>
+                    <div v-else-if="ipAddressValid">
                             <div class="navbar-item">
                                 <div class="field is-grouped">
                                     <p class="control">
@@ -71,9 +66,10 @@
                 <div class="column is-4-tablet is-3-desktop is-2-widescreen">
                     <aside class="menu">
                         <ul class="menu-list">
-                            <li><a v-bind:class="{'is-active': (current == 'status')}" @click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'records')}" @click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'status')}" @click="changeTab('status')"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'records')}" @click="changeTab('records')"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'notifications')}" @click="changeTab('notifications')"><span class="icon"><i class="fas fa-bell"></i></span>Notifications</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="changeTab('settings')"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
                         </ul>
                     </aside>
                 </div>
@@ -136,7 +132,7 @@
                                 </div>
                             </div>
                         </nav>
-                        <div v-if="currentUser.privateKey == ''" class="notification is-warning modal-success-notification">
+                        <div v-if="currentUser.user !== true" class="notification is-warning modal-success-notification">
                                 <i class="fas fa-exclamation-triangle"></i> You need to import your keys to be able to add or view encrypted records
                         </div>
                         <table class="table is-fullwidth is-hoverable">
@@ -167,24 +163,47 @@
                     <!-- Select network -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'settings')}">
                         <h1 class="title">Settings</h1>
+                        <form class="form" @submit.prevent="handleCheckIp()">
+                            <div class="field has-addons">
+                                <div class="control has-icons-right">
+                                    <input class="input" type="text" v-model="ipAddress" placeholder="Node IP Address"/>
+                                    <span class="icon is-small is-right" v-if="ipAddressValid === true">
+                                        <i class="fas fa-check"></i>
+                                    </span>
+                                    <span class="icon is-small is-right" v-if="ipAddressValid !== true">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </span>
+                                </div>
+                                <div class="control">
+                                    <a class="button is-success" @click="handleCheckIp()">Connect</a>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <div v-if="ipAddressValid !== true || ipAddressValid !== true" class="notification is-warning modal-success-notification">
+                                            <i class="fas fa-exclamation-triangle"></i> You first need to connect to a node to use this application. Please enter a valid node adress.
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                     <!-- Notifications -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'notifications')}">
                         <h1 class="title">Notifications</h1>
                         <div class="notifications-container">
-                                <div class="box">
+                                <div class="box" v-for="item in notifications">
                                     <div class="media-content">
                                         <div class="content">
-                                            <strong>tornadoalert@gmail.com</strong> wants permission to your medblock titled <strong>Whatupp</strong>
+                                            <strong>{{item.requester}}</strong> wants permission to your medblock titled <a @click="handleOpenRecord({id: item.docid})">{{item.title}}</a>
                                         </div>
                                     </div>
                                     <br>
                                     <nav class="level is-mobile">
                                         <div class="level-item has-text-centered">
-                                            <span class="button is-success is-selected is-fullwidth">Permit</span>
+                                            <span class="button is-success is-selected is-fullwidth" @click="handlePermitPermission(item)">Permit</span>
                                         </div>
                                         <div class="level-item has-text-centered">
-                                            <span class="button is-fullwidth">Deny</span>
+                                            <span class="button is-fullwidth" @click="handleDenyPermission(item)">Deny</span>
                                         </div>
                                     </nav>
                                 </div>
@@ -390,7 +409,6 @@
         </section>
     </div>
 
-    <script src="assets/utils.js"></script>
     <script src="assets/jszip.min.js"></script>
     <script src="assets/buffer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>

@@ -8,7 +8,7 @@
 // })
 
 const DATA = {
-    current: 'records',
+    current: 'settings',
     stats: {
         numberofrecords: 0,
         isCouchDBRunning: false,
@@ -28,7 +28,9 @@ const DATA = {
         loader: true,
         step: 3
     },
+    notifications: [],
     ipAddress: '',
+    ipAddressValid: false,
     formData: {
         newUser: {
             publicKey: '',
@@ -51,6 +53,19 @@ const DATA = {
             decryptionStatus: 0,
             status: 0
         }
+    }
+};
+let TIMER = "";
+
+function porturl (port, pruned = false) {
+    switch (port) {
+        case 5984:
+        case 5001:
+            return `${pruned === true ? `` : `http://`}${DATA.ipAddress}${ pruned === true ? `` : `:${port}`}`;
+            break;
+        default:
+            return `${location.protocol}//${location.hostname}${ pruned === true ? `` : `:${port}`}`;
+            break;
     }
 };
 
@@ -110,6 +125,11 @@ async function setUser (userjson) {
                 await Database.setUser(currentuserstr);
                 // Run through record permissions
                 await setRecordPermissions(DATA.records.list);
+                // Get permissions and setup permission polling
+                TIMER = setInterval(function () {
+                    getPermissionRequests(DATA.currentUser.email);
+                }, 120000);
+                getPermissionRequests(DATA.currentUser.email);
             }
         }
         catch (e) {
@@ -141,6 +161,9 @@ async function clearUser () {
     await Database.signOut();
     // Run through record permissions
     await setRecordPermissions(DATA.records.list);
+    // Clear Permissions polling
+    clearInterval(TIMER);
+    DATA.notifications = [];
 };
 function downloadObjectAsJson (exportObj, exportName) {
     var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
@@ -270,14 +293,18 @@ async function getRecordsBatch () {
         throw e;
     }
 };
-async function decryptPossible (publickey) {
+async function decryptPossible (publickeys) {
     let currentUserKey = await Encrypt.exportRSAKey(DATA.currentUser.publicKey);
-    if (currentUserKey.n === publickey.n) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    let currentUserKey_str = JSON.stringify(currentUserKey);
+    let found = publickeys.find(function (key) {
+        if (JSON.stringify(key.RSAPublicKey) === currentUserKey_str) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    });
+    return found;
 };
 async function updateRecords () {
     try {
@@ -307,14 +334,41 @@ async function setRecordPermissions (recordlist) {
             let keys = record.keys.map(key => JSON.stringify(key.RSAPublicKey));
             if (keys.indexOf(userkey) === -1) {
                 // map out all the permissions to json
-                let permissions = record.permissions.map(perm => JSON.stringify(perm));
+                let permissions = record.permissions.map(perm => JSON.stringify(perm.RSAPublicKey));
                 if (permissions.indexOf(userkey) === -1) {
                     // Can ask for permission
-                    record.permissionstatus = 3;                    
+                    record.permissionstatus = 3;
                 }
                 else {
                     // Asked for permission already
-                    record.permissionstatus = 2;
+                    let denied = record.denied;
+                    let decider = record.permissions
+                        // Check which all permissions have the userkey
+                        .filter(function (perm) {
+                            if (JSON.stringify(perm.RSAPublicKey) === userkey) {
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        })
+                        // Check which of these permissions are not denied
+                        .filter(function (perm) {
+                            if (denied.indexOf(perm.id) === -1) {
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        });
+                    if (decider.length > 0) {
+                        // Processing
+                        record.permissionstatus = 2;
+                    }
+                    else {
+                        // Denied so can ask again
+                        record.permissionstatus = 3;
+                    }
                 }
             }
             else {
@@ -339,11 +393,11 @@ async function displayRecord (record) {
     // Set state to 0
     DATA.formData.viewRecord.status = 0;
     // Check if decryption is possible
-    let possible = await decryptPossible(record.keys[0].RSAPublicKey);
+    let possible = await decryptPossible(record.keys);
     if (possible) {
         try {
             // Decrypt AES Key
-            let AESKey = await Encrypt.decryptRSAStringFromArray(record.keys[0].encryptedAESKey, DATA.currentUser.privateKey);
+            let AESKey = await Encrypt.decryptRSAStringFromArray(possible.encryptedAESKey, DATA.currentUser.privateKey);
             DATA.formData.viewRecord.decryptionStatus += 20;
             // create File Tree from IPFS
             let files = await getFileTreeFromHashTree(record.files, AESKey);
@@ -379,36 +433,104 @@ function isCouchDBRunning () {
 function isIPFSRunning () {
     DATA.stats.isIPFSRunning = false;
 };
+async function getPermissionRequests (usermail) {
+    let perms = await Database.getPermissionRequests(usermail);
+    DATA.notifications = perms;
+};
+async function setIpAdress (address) {
+    let flag = true;
+    // check if pouch is running
+    try {
+        let couchdb = await axios.get(`http://${address}:5984`);
+        console.log(couchdb);
+        if (couchdb.data.vendor.name !== "Medblocks") {
+            flag = false;
+        }
+    }
+    catch (e) {
+        console.log(e);
+        flag = false;
+    }
+    // check if ipfs is running
+    try {
+        let ipfs = IpfsApi(address, 5001);
+        let id = await ipfs.id();
+        if (id.protocolVersion !== "ipfs/0.1.0") {
+            flag = false;
+        }
+    }
+    catch (e) {
+        console.log(e);
+        flag = false;
+    }
+    // set ipAddressValid
+    if (flag === true) {
+        // Everything ok
+        DATA.ipAddressValid = true;
+        await onIpSet();
+    }
+    else {
+        // Everything not okay
+        DATA.ipAddressValid = false;
+        return false;
+    }
+};
+async function onIpSet () {
+    // Setups
+    Database.setUp();
+    IPFSUtils.setUp();
+    // Set current stats
+    try {
+        let numberofrecords = await Database.numberOfRecords();
+        if (numberofrecords.rows.length > 0) {
+            DATA.stats.numberofrecords = numberofrecords.rows[0].value;
+        }
+        else {
+            DATA.stats.numberofrecords = 0;
+        }
+    }
+    catch (e) {
+        throw e;
+    }
+    // User
+    try {
+        // Set the current user if any
+        let userjson = await Database.getUser();
+        setUser(userjson);
+    }
+    catch (e) {
+        // Clear the user
+        clearUser();
+        throw e;
+    }
+    DATA.stats.isCouchDBRunning = true;
+    DATA.stats.isIPFSRunning = true;
+    // Medblocks records
+    updateRecords();
+    // Open status page
+    this.current = 'status';
+}
 
 var main = new Vue({
     el: '#app',
     data: DATA,
-    async mounted () {
-        // Set current stats
-        isCouchDBRunning();
-        isIPFSRunning();
-        try {
-            let numberofrecords = await Database.numberOfRecords();
-            this.stats.numberofrecords = numberofrecords.rows[0].value;
-        }
-        catch (e) {
-            throw e;
-        }
-        // User
-        try {
-            // Set the current user if any
-            let userjson = await Database.getUser();
-            setUser(userjson);
-        }
-        catch (e) {
-            // Clear the user
-            clearUser();
-            throw e;
-        }
-        // Medblocks records
-        updateRecords();
-    },
     methods: {
+        handleCheckIp () {
+            if (/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gm.test(this.ipAddress)) {
+                setIpAdress(this.ipAddress);
+            }
+            else {
+                this.ipAddressValid = false;
+            }
+        },
+        changeTab: function (tabname) {
+            if (this.ipAddressValid) {
+                this.current = tabname;
+            }
+            else {
+                this.current = 'settings';
+            }
+        },
         // ReWrite
         async generateKey () {
             let keys = await Encrypt.newRSAKeys();
@@ -496,6 +618,7 @@ var main = new Vue({
                 let enAESkey = await Encrypt.encryptRSAStringToArray(proAESkey, recipientKey);
                 // Current user key
                 let currentuserKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+                let enAESkey_current = await Encrypt.encryptRSAStringToArray(proAESkey, this.currentUser.publicKey);
                 // console.log(proAESkey, enAESkey);
                 // Create Medblock object
                 let medblockobj = {
@@ -505,11 +628,16 @@ var main = new Vue({
                         {
                             RSAPublicKey: user.publicKey,
                             encryptedAESKey: enAESkey
+                        },
+                        {
+                            RSAPublicKey: currentuserKey,
+                            encryptedAESKey: enAESkey_current
                         }
                     ],
                     format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
                     type: 'medblock',
                     permissions: [],
+                    denied: [],
                     creator: {
                         publicKey: currentuserKey,
                         email: this.currentUser.email
@@ -523,7 +651,6 @@ var main = new Vue({
                 document.querySelector('#uploadRecords-submit').classList.remove('is-loading');
                 document.querySelector('#uploadRecords-submit').removeAttribute('disabled');
                 // Update records list
-                console.log(newblock);
                 let rec = {
                     id: newblock._id,
 					from: newblock.creator.email,
@@ -535,6 +662,19 @@ var main = new Vue({
                 };
                 await setRecordPermissions(rec);
                 this.records.list.unshift(rec);
+                // Number of Records
+                try {
+                    let numberofrecords = await Database.numberOfRecords();
+                    if (numberofrecords.rows.length > 0) {
+                        this.stats.numberofrecords = numberofrecords.rows[0].value;
+                    }
+                    else {
+                        this.stats.numberofrecords = 0;
+                    }
+                }
+                catch (e) {
+                    throw e;
+                }
             }
             else {
                 // TODO Show notification error
@@ -586,14 +726,48 @@ var main = new Vue({
         },
         async handleRequestRecordPermission  (item) {
             let userkey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+            let useremail = this.currentUser.email;
             // Check if permission isn't already there
             let userkey_ = JSON.stringify(userkey);
-            let permissions = item.permissions.map(perm => JSON.stringify(perm));
+            let permissions = item.permissions.map(perm => {JSON.stringify(perm.RSAPublicKey)});
             if (permissions.indexOf(userkey_) === -1) {
-                await Database.addPermission(item.id, userkey);
+                await Database.addPermission(item.id, userkey, useremail);
             }
             // change item permission status
             item.permissionstatus = 2;
+        },
+        async handlePermitPermission (item) {
+            // if (confirm("Are you sure you want to allow " + item.requester + " permission to " + item.title + "?")) {
+                // Fetch Record
+                let record = await Database.fetchRecord(item.docid);
+                // Get recipient key object
+                let userKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+                let userKey_ = JSON.stringify(userKey);
+                let recipientKey = record.keys.find(function (key) {
+                    if (JSON.stringify(key.RSAPublicKey) === userKey_) {
+                        return true;
+                    }
+                    else {
+                        false;
+                    }
+                });
+                if (recipientKey) {
+                    // Decode AES key
+                    let aesKeyStr = await Encrypt.decryptRSAStringFromArray(recipientKey.encryptedAESKey, this.currentUser.privateKey);
+                    // Encode with permissed key
+                    let permissedKey = await Encrypt.importRSAPublicKey(item.reqkey);
+                    let enAESkey = await Encrypt.encryptRSAStringToArray(aesKeyStr, permissedKey);
+                    // Put back in database
+                    await Database.allowPermission(item, enAESkey);
+                    // Refresh notifications
+                    getPermissionRequests(this.currentUser.email);
+                }
+            // }
+        },
+        async handleDenyPermission (item) {
+            await Database.denyPermission(item);
+            // Refresh notifications
+            getPermissionRequests(this.currentUser.email);
         },
         // ReWrite
         loadTextFromFile(ev) {
