@@ -8,7 +8,7 @@
 // })
 
 const DATA = {
-    current: 'records',
+    current: 'notifications',
     stats: {
         numberofrecords: 0,
         isCouchDBRunning: false,
@@ -321,14 +321,41 @@ async function setRecordPermissions (recordlist) {
             let keys = record.keys.map(key => JSON.stringify(key.RSAPublicKey));
             if (keys.indexOf(userkey) === -1) {
                 // map out all the permissions to json
-                let permissions = record.permissions.map(perm => JSON.stringify(perm));
+                let permissions = record.permissions.map(perm => JSON.stringify(perm.RSAPublicKey));
                 if (permissions.indexOf(userkey) === -1) {
                     // Can ask for permission
-                    record.permissionstatus = 3;                    
+                    record.permissionstatus = 3;
                 }
                 else {
                     // Asked for permission already
-                    record.permissionstatus = 2;
+                    let denied = record.denied;
+                    let decider = record.permissions
+                        // Check which all permissions have the userkey
+                        .filter(function (perm) {
+                            if (JSON.stringify(perm.RSAPublicKey) === userkey) {
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        })
+                        // Check which of these permissions are not denied
+                        .filter(function (perm) {
+                            if (denied.indexOf(perm.id) === -1) {
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        });
+                    if (decider.length > 0) {
+                        // Processing
+                        record.permissionstatus = 2;
+                    }
+                    else {
+                        // Denied so can ask again
+                        record.permissionstatus = 3;
+                    }
                 }
             }
             else {
@@ -538,6 +565,7 @@ var main = new Vue({
                     format: 'MEDBLOCK_FILES_AES-CBC_RSA-OAEP',
                     type: 'medblock',
                     permissions: [],
+                    denied: [],
                     creator: {
                         publicKey: currentuserKey,
                         email: this.currentUser.email
@@ -629,12 +657,45 @@ var main = new Vue({
             let useremail = this.currentUser.email;
             // Check if permission isn't already there
             let userkey_ = JSON.stringify(userkey);
-            let permissions = item.permissions.map(perm => JSON.stringify(perm));
+            let permissions = item.permissions.map(perm => {JSON.stringify(perm.RSAPublicKey)});
             if (permissions.indexOf(userkey_) === -1) {
                 await Database.addPermission(item.id, userkey, useremail);
             }
             // change item permission status
             item.permissionstatus = 2;
+        },
+        async handlePermitPermission (item) {
+            // if (confirm("Are you sure you want to allow " + item.requester + " permission to " + item.title + "?")) {
+                // Fetch Record
+                let record = await Database.fetchRecord(item.docid);
+                // Get recipient key object
+                let userKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
+                let userKey_ = JSON.stringify(userKey);
+                let recipientKey = record.keys.find(function (key) {
+                    if (JSON.stringify(key.RSAPublicKey) === userKey_) {
+                        return true;
+                    }
+                    else {
+                        false;
+                    }
+                });
+                if (recipientKey) {
+                    // Decode AES key
+                    let aesKeyStr = await Encrypt.decryptRSAStringFromArray(recipientKey.encryptedAESKey, this.currentUser.privateKey);
+                    // Encode with permissed key
+                    let permissedKey = await Encrypt.importRSAPublicKey(item.reqkey);
+                    let enAESkey = await Encrypt.encryptRSAStringToArray(aesKeyStr, permissedKey);
+                    // Put back in database
+                    await Database.allowPermission(item, enAESkey);
+                    // Refresh notifications
+                    getPermissionRequests(this.currentUser.email);
+                }
+            // }
+        },
+        async handleDenyPermission (item) {
+            await Database.denyPermission(item);
+            // Refresh notifications
+            getPermissionRequests(this.currentUser.email);
         },
         // ReWrite
         loadTextFromFile(ev) {

@@ -153,6 +153,7 @@
 					title: block.value.title,
 					files: block.value.files,
 					permissions: block.value.permissions,
+					denied: block.value.denied,
 					keys: block.value.keys
 				};
 			});
@@ -173,7 +174,7 @@
 		},
 		async addPermission (id, rsakey, useremail) {
 			let uuid = await axios.get(porturl(5984) + '/_uuids?count=1');
-			uuid = uuid.data.uuids;
+			uuid = uuid.data.uuids[0];
 			let block = await MEDBLOCK.get(id);
 			block.permissions.push({
 				RSAPublicKey: rsakey,
@@ -189,13 +190,30 @@
 			});
 			let reqs = perms.rows.map(function (perm) {
 				return {
-					id: perm.id,
+					docid: perm.id,
 					reqkey: perm.value.permission,
 					title: perm.value.title,
-					requester: perm.value.requester
+					requester: perm.value.requester,
+					permid: perm.value.id
 				};
 			});
 			return reqs;
+		},
+		async allowPermission (item, enAESkey) {
+			let block = await MEDBLOCK.get(item.docid);
+			// Put into keys
+			block.keys.push({
+				RSAPublicKey: item.reqkey,
+                encryptedAESKey: enAESkey
+			});
+			await MEDBLOCK.put(block);
+		},
+		async denyPermission (item) {
+			let docid = item.docid;
+			let permid = item.permid;
+			let block = await MEDBLOCK.get(docid);
+			block.denied.push(permid);
+			await MEDBLOCK.put(block);
 		}
 	};
 

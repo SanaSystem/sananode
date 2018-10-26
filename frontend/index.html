@@ -31,11 +31,6 @@
                                 {{currentUser.name}}
                             </div>
                             <div class="navbar-dropdown">
-                                <a class="navbar-item" @click="current = 'notifications'">
-                                    <div>
-                                    Notifications
-                                    </div>
-                                </a>
                                 <a class="navbar-item" @click="current = 'managekeys'">
                                     <div>
                                     Manage Keys
@@ -73,6 +68,7 @@
                         <ul class="menu-list">
                             <li><a v-bind:class="{'is-active': (current == 'status')}" @click="current = 'status'"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
                             <li><a v-bind:class="{'is-active': (current == 'records')}" @click="current = 'records'"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'notifications')}" @click="current = 'notifications'"><span class="icon"><i class="fas fa-bell"></i></span>Notifications</a></li>
                             <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="current = 'settings'"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
                         </ul>
                     </aside>
@@ -171,20 +167,20 @@
                     <!-- Notifications -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'notifications')}">
                         <h1 class="title">Notifications</h1>
-                        <div class="notifications-container" v-for="item in notifications">
-                                <div class="box">
+                        <div class="notifications-container">
+                                <div class="box" v-for="item in notifications">
                                     <div class="media-content">
                                         <div class="content">
-                                            <strong>{{item.requester}}</strong> wants permission to your medblock titled <a @click="handleOpenRecord(item)">{{item.title}}</a>
+                                            <strong>{{item.requester}}</strong> wants permission to your medblock titled <a @click="handleOpenRecord({id: item.docid})">{{item.title}}</a>
                                         </div>
                                     </div>
                                     <br>
                                     <nav class="level is-mobile">
                                         <div class="level-item has-text-centered">
-                                            <span class="button is-success is-selected is-fullwidth">Permit</span>
+                                            <span class="button is-success is-selected is-fullwidth" @click="handlePermitPermission(item)">Permit</span>
                                         </div>
                                         <div class="level-item has-text-centered">
-                                            <span class="button is-fullwidth">Deny</span>
+                                            <span class="button is-fullwidth" @click="handleDenyPermission(item)">Deny</span>
                                         </div>
                                     </nav>
                                 </div>
