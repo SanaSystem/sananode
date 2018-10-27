@@ -1,5 +1,17 @@
 (function () {
 	// STRING/ARRAY BUFFER HELPER FUNCTIONS
+	function arrayToBase64(array) {
+		return btoa(String.fromCharCode.apply(null, new Uint8Array(array)))
+	}
+	
+	function Base64toArray(string) {
+		decodedString = atob(string)
+		len = decodedString.length
+		var bytes = new Uint8Array(len)
+		bytes = decodedString.split('').map(c=>c.charCodeAt(0))
+		return bytes
+	}
+
 	function stringToArrayBuffer (str) {
 		var buf = new ArrayBuffer(str.length * 2);
 	    var bufView = new Uint16Array(buf);
@@ -26,7 +38,7 @@
 		async encryptRSAStringToArray (str, publickey) {
 			let buff = await crypto.subtle.encrypt('RSA-OAEP', publickey, stringToArrayBuffer(str));
 			let arr = Array.from(new Uint8Array(buff));
-			return arr;
+			return arrayToBase64(arr);
 		},
 		async decryptRSAString (str, privatekey) {
 			try {
@@ -38,6 +50,7 @@
 			}
 		},
 		async decryptRSAStringFromArray (arr, privatekey) {
+			arr = Base64toArray(arr)
 			let a = Uint8Array.from(arr);
 			let buff = await crypto.subtle.decrypt('RSA-OAEP', privatekey, a.buffer);
 			return arrayBufferToString(buff);
