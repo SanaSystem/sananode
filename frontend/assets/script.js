@@ -320,9 +320,9 @@ async function getRecordsBatch () {
 };
 async function decryptPossible (publickeys) {
     let currentUserKey = await Encrypt.exportRSAKey(DATA.currentUser.publicKey);
-    let currentUserKey_str = JSON.stringify(currentUserKey);
+    let currentUserKey_str = currentUserKey.n;
     let found = publickeys.find(function (key) {
-        if (JSON.stringify(key.RSAPublicKey) === currentUserKey_str) {
+        if (key.RSAPublicKey.n === currentUserKey_str) {
             return true;
         }
         else {
@@ -350,16 +350,16 @@ async function setRecordPermissions (recordlist) {
     if (DATA.currentUser.user) {
         // Get current user rsa key
         userkey = await Encrypt.exportRSAKey(DATA.currentUser.publicKey);
-        userkey = JSON.stringify(userkey);
+        userkey = userkey.n;
     }
     // run through each record and put if permitted or not
     recordlist.forEach(function (record) {
         if (userkey) {
             // map out all the keys to json
-            let keys = record.keys.map(key => JSON.stringify(key.RSAPublicKey));
+            let keys = record.keys.map(key => key.RSAPublicKey.n);
             if (keys.indexOf(userkey) === -1) {
                 // map out all the permissions to json
-                let permissions = record.permissions.map(perm => JSON.stringify(perm.RSAPublicKey));
+                let permissions = record.permissions.map(perm => perm.RSAPublicKey.n);
                 if (permissions.indexOf(userkey) === -1) {
                     // Can ask for permission
                     record.permissionstatus = 3;
@@ -370,7 +370,7 @@ async function setRecordPermissions (recordlist) {
                     let decider = record.permissions
                         // Check which all permissions have the userkey
                         .filter(function (perm) {
-                            if (JSON.stringify(perm.RSAPublicKey) === userkey) {
+                            if (perm.RSAPublicKey.n === userkey) {
                                 return true;
                             }
                             else {
@@ -763,8 +763,8 @@ var main = new Vue({
             let userkey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
             let useremail = this.currentUser.email;
             // Check if permission isn't already there
-            let userkey_ = JSON.stringify(userkey);
-            let permissions = item.permissions.map(perm => {JSON.stringify(perm.RSAPublicKey)});
+            let userkey_ = userkey.n;
+            let permissions = item.permissions.map(perm => perm.RSAPublicKey.n);
             if (permissions.indexOf(userkey_) === -1) {
                 await Database.addPermission(item.id, userkey, useremail);
             }
@@ -777,9 +777,9 @@ var main = new Vue({
                 let record = await Database.fetchRecord(item.docid);
                 // Get recipient key object
                 let userKey = await Encrypt.exportRSAKey(this.currentUser.publicKey);
-                let userKey_ = JSON.stringify(userKey);
+                let userKey_ = userKey.n;
                 let recipientKey = record.keys.find(function (key) {
-                    if (JSON.stringify(key.RSAPublicKey) === userKey_) {
+                    if (key.RSAPublicKey.n === userKey_) {
                         return true;
                     }
                     else {
