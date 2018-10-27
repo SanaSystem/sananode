@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     'server',
     'django_celery_results',
+    'django_celery_beat',
     'corsheaders',
     'rest_framework',
     'django.contrib.admin',

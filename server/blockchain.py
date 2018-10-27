@@ -1,17 +1,19 @@
 import iota
 import json
 from itertools import groupby
-iotaNode = "https://field.deviota.com:443"
-
+# Using Test node. Public node commented.
+# iotaNode = "https://field.deviota.com:443"
+iotaNode = "https://nodes.testnet.iota.org:443"
 seed = ""
 api = iota.Iota(iotaNode, seed)
 
 tag_list = {
-    'register' : 'VHXGXMNKDBSCVZHZKQNONMC9EQN',
-    'body' : 'DSYT9KYMQILBPPRRMARRBHDQYNA',
-    'key': 'IZZXPMBFYQQFVQGMPPGPTQHQPWE',
-    'permission': 'CZLRLSSZZIKEAUTLLBFXYEDFMWO',
-    'file': 'AZLRLSSZZIKJAUTLLBFXYEDFMWO'
+    'register' : 'GFAQBESKMJIPYWPARQBZMROJVFP',
+    'body' : 'M9CJ9DLLGBDI9ZPXRIIPDCEBWGO',
+    'key': 'GQAZH9JTKGRTKMWQSLSYSVQ9HJG',
+    'permission': 'FKXHTC9ERWPKOXEBAFFYUTRDXJO',
+    'file': 'WYKOYVPPSGWVSPZIJXWHJTUEU9O',
+    'deny': 'K9FZJKOSGDRNRYCTGOPWSDBGYAL'
 }
 
 reverse_tag_list = {v:k for k,v in tag_list.items()}
@@ -28,7 +30,6 @@ def register_address():
 def serialize_decomposed(decomposed_list):
     serialized = []
     for e in decomposed_list:
-        # print(e)
         obj = {
         'tag' : tag_list.get(e['tag'], iota.Tag.from_string(e['tag']).as_json_compatible()),
         'data' : iota.TryteString.from_string(json.dumps(e)),
@@ -55,36 +56,62 @@ def dict_to_txns(serialized_list):
 
 
 def broadcast_on_tangle(decomposed_list):
+    print("[+] Broadcast to tangle initiated")
     serialized = serialize_decomposed(decomposed_list)
     txns = dict_to_txns(serialized)
     bundles = []
     for txn in txns:
         bundle = api.send_transfer(depth=3, transfers = [txn])
         bundles.append(bundle)
-    
+        print("[+] Broadcast successful. Bundle generated: {}".format(bundle))
     return bundles
 
 def retrieve_from_tangle(email):
+    print("[+] Recieving data from tangle")
     address = iota.Address.from_string(email)
     hashes = api.find_transactions(addresses=[address], tags=list(tag_list.values()))['hashes']
     if len(hashes) == 0:
         return []
-    trytes = api.get_trytes(hashes)['trytes']
-    txns = [iota.Transaction.from_tryte_string(t) for t in trytes]
-    # print("Total transactions: {}".format(len(txns)))
-    unique_bundles = set(map(lambda txn:txn.bundle_hash, txns))
-    # print("Found {} bundles: {}".format(len(unique_bundles), unique_bundles))
+    bundle_count = 0
     data = []
-    messages = [[(txn.signature_message_fragment, txn.current_index) for txn in txns if txn.bundle_hash==h] for h in unique_bundles]
-    
-    for message in messages:
-        m = ""
-        for i in sorted(message, key=lambda txn:txn[1]):
-            m += str(i[0])
-
-        string = iota.TryteString(m).decode()
-        data.append(json.loads(string))
+    for hash in hashes:
+        
+        try:
+            bundle = api.get_bundles(hash)
+            bundle = bundle["bundles"]
+            print("[+] Recieved data. Total bundles recieved: {}".format(bundle_count+1))
+            bundle_count += 1
+            messages = []
+            for b in bundle:
+                messages += b.get_messages()
+            json_messages = [json.loads(message) for message in messages]
+            data += json_messages
+        except iota.BadApiResponse:
+            print("[-] Bundle skipped. BadApiResponse. (Probably not tail transaction?)")
+            pass
+    print("Recieved messages from {} bundles".format(bundle_count))
     return data
+    
+    # for 
+    # # print("Total transactions: {}".format(len(txns)))
+    # unique_bundles = set(map(lambda txn:txn.bundle_hash, txns))
+    # # print("Found {} bundles: {}".format(len(unique_bundles), unique_bundles))
+    # data = []
+    # messages = [[(txn.signature_message_fragment, txn.current_index, txn.hash) for txn in txns if txn.bundle_hash==h] for h in unique_bundles]
+    
+    # for message in messages:
+    #     m = ""
+    #     for i in sorted(message, key=lambda message:message[1]):
+    #         m += str(i[0])
+            
+    #     try:
+    #         print("Decoding: {}".format(m))
+    #         string = iota.TryteString(m).decode()
+    #     except Exception as e:
+    #         #print("Error while decoding transaction hash: {}".format(message[2]))
+    #         print(e)
+    #     data.append(json.loads(string))
+    # return data
 
 
 def decode_messages(hashes):

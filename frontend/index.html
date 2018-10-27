@@ -68,7 +68,7 @@
                         <ul class="menu-list">
                             <li><a v-bind:class="{'is-active': (current == 'status')}" @click="changeTab('status')"><span class="icon"><i class="fas fa-check-circle"></i></span>Status</a></li>
                             <li><a v-bind:class="{'is-active': (current == 'records')}" @click="changeTab('records')"><span class="icon"><i class="fas fa-book"></i></span>Records</a></li>
-                            <li><a v-bind:class="{'is-active': (current == 'notifications')}" @click="changeTab('notifications')"><span class="icon"><i class="fas fa-bell"></i></span>Notifications</a></li>
+                            <li><a v-bind:class="{'is-active': (current == 'notifications')}" @click="changeTab('notifications')"><span class="icon"><i class="fas fa-bell"></i></span>Notifications <span class="icon is-small is-size-7 has-text-danger" v-if="notifications.length > 0"><i class="fas fa-circle"></i></span></a></li>
                             <li><a v-bind:class="{'is-active': (current == 'settings')}" @click="changeTab('settings')"><span class="icon"><i class="fas fa-cog"></i></span>Settings</a></li>
                         </ul>
                     </aside>
@@ -90,7 +90,7 @@
 
                             <div class="column is-12-tablet is-6-desktop is-3-widescreen">
                                 <div class="notification is-link has-text">
-                                    <p class="title is-1">76</p>
+                                    <p class="title is-1">{{peerslist.length}}</p>
                                     <p class="subtitle is-4">Peers</p>
                                 </div>
                             </div>

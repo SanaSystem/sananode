@@ -30,6 +30,13 @@ services:
       - .:/code/
     depends_on:
       - rabbit
+  beat:
+    build: .
+    command: celery -A sananode beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/code/
+    depends_on:
+      - rabbit
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
