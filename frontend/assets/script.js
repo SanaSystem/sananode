@@ -31,6 +31,7 @@ const DATA = {
     notifications: [],
     ipAddress: '',
     ipAddressValid: false,
+    peerslist: 0,
     formData: {
         newUser: {
             publicKey: '',
@@ -128,12 +129,36 @@ async function setUser (userjson) {
                 // Get permissions and setup permission polling
                 TIMER = setInterval(function () {
                     getPermissionRequests(DATA.currentUser.email);
-                }, 120000);
+                }, 5000);
                 getPermissionRequests(DATA.currentUser.email);
             }
         }
         catch (e) {
-            throw e;
+            if (e.status == 401) {
+                // Sign up user to CouchDB
+                console.log("Signing up new user")
+                Database.signUp(email, password, {
+                    username: name,
+                    publicKey: prouser.publicKey
+                })
+                .then((sucess) => {
+                    if (sucess) {
+                        // Set current user
+                        setUser(JSON.stringify(prouser));
+                    }
+                })
+                .catch(function (e) {
+                    if (e.status == 409) {
+                        alert("Wrong user file. User already exists with different private key.");
+                    }
+                    else {
+                        throw e;
+                    }
+                });
+            }
+            else {
+                throw e;
+            }
             // TODO Notification
         }
     }
@@ -476,6 +501,8 @@ async function setIpAdress (address) {
     }
 };
 async function onIpSet () {
+    // Save IP
+    await Database.saveIp(DATA.ipAddress);
     // Setups
     Database.setUp();
     IPFSUtils.setUp();
@@ -488,6 +515,9 @@ async function onIpSet () {
         else {
             DATA.stats.numberofrecords = 0;
         }
+        let peerslist = await IPFSUtils.getPeersList();
+        console.log
+        DATA.peerslist = peerslist;
     }
     catch (e) {
         throw e;
@@ -508,12 +538,17 @@ async function onIpSet () {
     // Medblocks records
     updateRecords();
     // Open status page
-    this.current = 'status';
+    DATA.current = 'status';
 }
 
 var main = new Vue({
     el: '#app',
     data: DATA,
+    async mounted () {
+        console.log("This is running")
+        this.ipAddress = await Database.getIp();
+        this.handleCheckIp();
+    },
     methods: {
         handleCheckIp () {
             if (/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/gm.test(this.ipAddress)) {

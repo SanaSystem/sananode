@@ -9,7 +9,6 @@
 				return PouchDB.fetch(url, opts);
 			}
 		});
-		console.log(MEDBLOCK);
 	};
 
 	let DATABASE = {
@@ -94,7 +93,7 @@
 				}
 			}
 			catch (e) {
-				throw e;
+				throw e
 			}
 		},
 		async signOut () {
@@ -193,6 +192,34 @@
 			let block = await MEDBLOCK.get(docid);
 			block.denied.push(permid);
 			await MEDBLOCK.put(block);
+		},
+		async saveIp (ip_) {
+			console.log("Saving IP")
+			try {
+				let ip = await GENERAL.get('ip');
+				ip.data = ip_;
+				await GENERAL.put(ip);
+			}
+			catch (e) {
+				if (e.status === 404) {
+					await GENERAL.put({
+						data: ip_,
+						_id: 'ip'
+					});
+				}
+				else {
+					throw e;
+				}
+			}
+		},
+		async getIp () {
+			try {
+				let ip = await GENERAL.get('ip');
+				return ip.data;
+			}
+			catch (e) {
+				throw e;
+			}
 		},
 		setUp: setUp
 	};

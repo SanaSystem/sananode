@@ -52,6 +52,9 @@ def check_iota_sync(email, base_url="http://couchdb:5984/"):
     async_broadcast_on_tangle.delay(to_dict_list(transmit_to_iota))
     return
 
+@task
+def check_all_users():
+    
 @task 
 def check_sync(email):
     # Check IPFS sync

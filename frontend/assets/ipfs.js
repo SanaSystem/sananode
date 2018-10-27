@@ -34,6 +34,10 @@
 			data = data[0].content;
 			return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
 		},
+		async getPeersList () {
+			let list = await NODE.bootstrap.list();
+			return list.Peers;
+		},
 		setUp: setUp
 	};
 
