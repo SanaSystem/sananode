@@ -75,7 +75,6 @@ def retrieve_from_tangle(email):
     bundle_count = 0
     data = []
     for hash in hashes:
-        
         try:
             bundle = api.get_bundles(hash)
             bundle = bundle["bundles"]

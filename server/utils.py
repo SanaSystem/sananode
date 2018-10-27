@@ -97,7 +97,8 @@ def reconstruct_medblocks(decomposed_list):
             '_id': id,
             'keys': [],
             'files': [],
-            'permissions': []
+            'permissions': [],
+            'type':'medblock'
         }
         for medfrag in list(medfrag_iterator):
             if medfrag['tag'] == 'body':

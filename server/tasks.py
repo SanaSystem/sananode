@@ -7,7 +7,11 @@ import json
 
 @shared_task
 def async_broadcast_on_tangle(list_of_elements):
-    return broadcast_on_tangle(list_of_elements)
+    result = broadcast_on_tangle(list_of_elements)
+    if len(result) > 0:
+        return True
+    else:
+        return False
 
 @task
 def check_iota_sync(email, base_url="http://couchdb:5984/"):
@@ -54,7 +58,7 @@ def check_iota_sync(email, base_url="http://couchdb:5984/"):
 
 @task
 def check_all_users():
-    
+    pass
 @task 
 def check_sync(email):
     # Check IPFS sync
