@@ -116,12 +116,10 @@
 			}
 			return await MEDBLOCK.get(uuid[0]);
 		},
-		async fetchRecords (step = 5, startkey = "") {
+		async fetchRecords () {
 			let res = await MEDBLOCK.query('preview/list', {
-				startkey: startkey,
-				limit: step,
-				skip: (startkey === "" ? 0 : 1),
-				reduce: false
+				reduce: false,
+				descending: true
 			});
 			let results = res.rows.map(function (block) {
 				return {
@@ -141,15 +139,6 @@
 			let record = await MEDBLOCK.get(recordid);
 			return record;
 		},
-		async numberOfRecords () {
-			try {
-				let records = await MEDBLOCK.query('preview/list', {reduce:true});
-				return records;
-			}
-			catch (e) {
-				throw e;
-			}
-		},
 		async addPermission (id, rsakey, useremail) {
 			let uuid = await axios.get(porturl(5984) + '/_uuids?count=1');
 			uuid = uuid.data.uuids[0];
@@ -163,8 +152,7 @@
 		},
 		async getPermissionRequests (useremail) {
 			let perms = await MEDBLOCK.query('preview/permissions', {
-				key: useremail,
-				include_docs: true
+				key: useremail
 			});
 			let reqs = perms.rows.map(function (perm) {
 				return {
@@ -176,6 +164,21 @@
 				};
 			});
 			return reqs;
+		},
+		async getPermissionDenied (useremail) {
+			let denied = await MEDBLOCK.query('preview/denied', {
+				key: useremail
+			});
+			let dens = denied.rows.map(function (perm) {
+				return {
+					docid: perm.id,
+					reqkey: perm.value.permission,
+					title: perm.value.title,
+					requester: perm.value.requester,
+					permid: perm.value.id
+				}
+			});
+			return dens;
 		},
 		async allowPermission (item, enAESkey) {
 			let block = await MEDBLOCK.get(item.docid);
@@ -194,7 +197,6 @@
 			await MEDBLOCK.put(block);
 		},
 		async saveIp (ip_) {
-			console.log("Saving IP")
 			try {
 				let ip = await GENERAL.get('ip');
 				ip.data = ip_;
