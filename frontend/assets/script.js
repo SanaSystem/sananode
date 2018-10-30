@@ -23,12 +23,10 @@ const DATA = {
         saved: false
     },
     records: {
-        list: [],
-        startkey: "",
-        loader: true,
-        step: 3
+        list: []
     },
     notifications: [],
+    denied: [],
     ipAddress: '',
     ipAddressValid: false,
     peerslist: 0,
@@ -53,10 +51,16 @@ const DATA = {
             files: [],
             decryptionStatus: 0,
             status: 0
+        },
+        deniedRecord: {
+            title: '',
+            to: ''
         }
     }
 };
 let TIMER = "";
+let DOCPOLLER = "";
+let POLLTIME = 5000;
 
 function porturl (port, pruned = false) {
     switch (port) {
@@ -129,7 +133,7 @@ async function setUser (userjson) {
                 // Get permissions and setup permission polling
                 TIMER = setInterval(function () {
                     getPermissionRequests(DATA.currentUser.email);
-                }, 5000);
+                }, POLLTIME);
                 getPermissionRequests(DATA.currentUser.email);
             }
         }
@@ -300,17 +304,9 @@ async function getFileTreeFromHashTree (filelist, aeskey) {
     let results = await Promise.all(promises);
     return results;
 };
-async function getRecordsBatch () {
+async function getRecords () {
     try {
         let records = await Database.fetchRecords(DATA.records.step, DATA.records.startkey);
-        if (records.length > 0) {
-            // Set the startkey
-            DATA.records.startkey = records[records.length - 1].id;
-        }
-        // Check if the length > step
-        if (records.length < DATA.records.step) {
-            DATA.records.loader = false;
-        }
         // return batch of records
         return records;
     }
@@ -333,9 +329,9 @@ async function decryptPossible (publickeys) {
 };
 async function updateRecords () {
     try {
-        let records = await getRecordsBatch();
+        let records = await getRecords();
         await setRecordPermissions(records);
-        DATA.records.list = DATA.records.list.concat(records);
+        DATA.records.list = records;
     }
     catch (e) {
         throw e;
@@ -392,7 +388,7 @@ async function setRecordPermissions (recordlist) {
                     }
                     else {
                         // Denied so can ask again
-                        record.permissionstatus = 3;
+                        record.permissionstatus = 4;
                     }
                 }
             }
@@ -459,21 +455,24 @@ function isIPFSRunning () {
     DATA.stats.isIPFSRunning = false;
 };
 async function getPermissionRequests (usermail) {
+    // Set new permissions
     let perms = await Database.getPermissionRequests(usermail);
     DATA.notifications = perms;
+    // Set denied permissions
+    let denied = await Database.getPermissionDenied(usermail);
+    DATA.denied = denied;
 };
 async function setIpAdress (address) {
+    DATA.ipAddressValid = 2;
     let flag = true;
     // check if pouch is running
     try {
         let couchdb = await axios.get(`http://${address}:5984`);
-        console.log(couchdb);
         if (couchdb.data.vendor.name !== "Medblocks") {
             flag = false;
         }
     }
     catch (e) {
-        console.log(e);
         flag = false;
     }
     // check if ipfs is running
@@ -485,7 +484,6 @@ async function setIpAdress (address) {
         }
     }
     catch (e) {
-        console.log(e);
         flag = false;
     }
     // set ipAddressValid
@@ -508,15 +506,7 @@ async function onIpSet () {
     IPFSUtils.setUp();
     // Set current stats
     try {
-        let numberofrecords = await Database.numberOfRecords();
-        if (numberofrecords.rows.length > 0) {
-            DATA.stats.numberofrecords = numberofrecords.rows[0].value;
-        }
-        else {
-            DATA.stats.numberofrecords = 0;
-        }
         let peerslist = await IPFSUtils.getPeersList();
-        console.log
         DATA.peerslist = peerslist;
     }
     catch (e) {
@@ -533,10 +523,18 @@ async function onIpSet () {
         clearUser();
         throw e;
     }
+    // Medblocks records
+    if (DOCPOLLER !== "") {
+        clearInterval(DOCPOLLER);
+        DOCPOLLER = "";
+    }
+    setInterval(function () {
+        updateRecords();
+    }, POLLTIME);
+    await updateRecords();
+    // Turn
     DATA.stats.isCouchDBRunning = true;
     DATA.stats.isIPFSRunning = true;
-    // Medblocks records
-    updateRecords();
     // Open status page
     DATA.current = 'status';
 }
@@ -545,7 +543,6 @@ var main = new Vue({
     el: '#app',
     data: DATA,
     async mounted () {
-        console.log("This is running")
         this.ipAddress = await Database.getIp();
         this.handleCheckIp();
     },
@@ -682,6 +679,12 @@ var main = new Vue({
                 // Post to database
                 let newblock = await Database.postNewMedblock(medblockobj);
                 // Cleanup
+                this.formData.updateRecords = {
+                    recipient: '',
+                    recipientValid: 0,
+                    title: '',
+                    files: []
+                };
                 document.querySelector('#newRecord').classList.remove('is-active');
                 document.querySelector('#uploadRecords-submit').classList.remove('is-loading');
                 document.querySelector('#uploadRecords-submit').removeAttribute('disabled');
@@ -697,19 +700,6 @@ var main = new Vue({
                 };
                 await setRecordPermissions(rec);
                 this.records.list.unshift(rec);
-                // Number of Records
-                try {
-                    let numberofrecords = await Database.numberOfRecords();
-                    if (numberofrecords.rows.length > 0) {
-                        this.stats.numberofrecords = numberofrecords.rows[0].value;
-                    }
-                    else {
-                        this.stats.numberofrecords = 0;
-                    }
-                }
-                catch (e) {
-                    throw e;
-                }
             }
             else {
                 // TODO Show notification error
@@ -799,6 +789,11 @@ var main = new Vue({
                 }
             // }
         },
+        async handleRecordDenied (item) {
+            this.formData.deniedRecord.title = item.title;
+            this.formData.deniedRecord.to = item.to;
+            document.querySelector('#deniedRecord').classList.add('is-active');
+        },
         async handleDenyPermission (item) {
             await Database.denyPermission(item);
             // Refresh notifications
@@ -820,6 +815,16 @@ var main = new Vue({
     computed: {
         formData_newUser_password: function () {
             return this.formData.newUser.privateKey.p.slice(0, 20);
+        },
+        'stats.numberofrecords': function () {
+            return this.records.list.length;
+        },
+        mailify () {
+            let urlifier = encodeURIComponent;
+            let mailer = `mailto:${this.formData.deniedRecord.to}`;
+            let subject = `subject=Requesting permission to access ${urlifier(this.formData.deniedRecord.title)}`;
+            let mail = `body=${urlifier(`Hello!\n\nI'd like permission to the medblock ${this.formData.deniedRecord.title} that was sent to you.\n\nYou had denied it before, but I'd need it for the following reasons:\n<REASONS>\n\nPlease do permit me access to the medblock. You can do this by going to the notifications tab and looking under the denied permissions sections for me (${this.currentUser.email}) requesting access to the medblock.\n\n\nRegards\n${this.currentUser.name}`)}`;
+            return `${mailer}?${subject}&${mail}`;
         }
     }
 });

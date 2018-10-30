@@ -44,7 +44,7 @@
                             </div>         
                     </div>
                     <!-- If not logged in -->
-                    <div v-else-if="ipAddressValid">
+                    <div v-else-if="ipAddressValid === true">
                             <div class="navbar-item">
                                 <div class="field is-grouped">
                                     <p class="control">
@@ -83,7 +83,7 @@
                         <div class="columns is-multiline">
                             <div class="column is-12-tablet is-6-desktop is-3-widescreen">
                                 <div class="notification is-success has-text">
-                                    <p class="title is-1">{{stats.numberofrecords}}</p>
+                                    <p class="title is-1">{{records.list.length}}</p>
                                     <p class="subtitle is-4">Records</p>
                                 </div>
                             </div>
@@ -109,7 +109,7 @@
                             <div class="level-left">
                                 <div class="level-item">
                                 <p class="subtitle is-5">
-                                    <strong>{{stats.numberofrecords}}</strong> records
+                                    <strong>{{records.list.length}}</strong> records
                                 </p>
                                 </div>
                             
@@ -151,7 +151,12 @@
                                         <td>{{item.from}}</td>
                                         <td>{{item.to}}</td>
                                         <td>{{item.files}}</td>
-                                        <td><a v-if="item.permissionstatus === 1" class="button is-info" @click="handleOpenRecord(item)">View</a><a v-else-if="item.permissionstatus === 2" class="button is-danger is-loading">Ask Permission</a><a v-else-if="item.permissionstatus === 3" class="button is-danger" @click="handleRequestRecordPermission(item)">Ask Permission</a></td>
+                                        <td>
+                                            <a v-if="item.permissionstatus === 1" class="button is-info" @click="handleOpenRecord(item)">View</a>
+                                            <a v-else-if="item.permissionstatus === 2" class="button is-danger is-loading">Ask Permission</a>
+                                            <a v-else-if="item.permissionstatus === 3" class="button is-danger" @click="handleRequestRecordPermission(item)">Ask Permission</a>
+                                            <a v-if="item.permissionstatus === 4" class="button is-warning" @click="handleRecordDenied(item)">Denied Permission</a>
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="has-text-centered" style="cursor: pointer;" colspan="5" v-if="records.loader" @click="handleLoadMoreRecords">Load More Records</td>
@@ -164,24 +169,29 @@
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'settings')}">
                         <h1 class="title">Settings</h1>
                         <form class="form" @submit.prevent="handleCheckIp()">
-                            <div class="field has-addons">
-                                <div class="control has-icons-right">
-                                    <input class="input" type="text" v-model="ipAddress" placeholder="Node IP Address"/>
-                                    <span class="icon is-small is-right" v-if="ipAddressValid === true">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                    <span class="icon is-small is-right" v-if="ipAddressValid !== true">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    </span>
-                                </div>
-                                <div class="control">
-                                    <a class="button is-success" @click="handleCheckIp()">Connect</a>
-                                </div>
-                            </div>
                             <div class="field">
+                                <label class="label">Node IP Address</label>
                                 <div class="control">
-                                    <div v-if="ipAddressValid !== true || ipAddressValid !== true" class="notification is-warning modal-success-notification">
-                                            <i class="fas fa-exclamation-triangle"></i> You first need to connect to a node to use this application. Please enter a valid node adress.
+                                    <div class="field has-addons">
+                                        <div class="control has-icons-right" :class="{'is-loading': ipAddressValid === 2}">
+                                            <input class="input" type="text" v-model="ipAddress" placeholder="Node IP Address"/>
+                                            <span class="icon is-small is-right" v-if="ipAddressValid === true">
+                                                <i class="fas fa-check"></i>
+                                            </span>
+                                            <span class="icon is-small is-right" v-if="ipAddressValid === false">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </span>
+                                        </div>
+                                        <div class="control">
+                                            <a class="button is-success" @click="handleCheckIp()">Connect</a>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="control">
+                                            <div v-if="ipAddressValid === false" class="notification is-warning modal-success-notification">
+                                                    <i class="fas fa-exclamation-triangle"></i> You first need to connect to a node to use this application. Please enter a valid node adress.
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -200,21 +210,58 @@
                                     <br>
                                     <nav class="level is-mobile">
                                         <div class="level-item has-text-centered">
-                                            <span class="button is-success is-selected is-fullwidth" @click="handlePermitPermission(item)">Permit</span>
+                                            <span class="button is-success is-fullwidth" @click="handlePermitPermission(item)">Permit</span>
                                         </div>
                                         <div class="level-item has-text-centered">
                                             <span class="button is-fullwidth" @click="handleDenyPermission(item)">Deny</span>
                                         </div>
                                     </nav>
                                 </div>
+                                <div class="box" v-if="notifications.length === 0">
+                                    You have no new notifications.
+                                </div>
                         </div>
-                        
+                        <br/>
+                        <div class="notifications-container">
+                            <h2 class="title is-4">Denied Permissions</h2>
+                            <div class="box" v-for="item in denied">
+                                <div class="media-content">
+                                    <div class="content">
+                                        <strong>{{item.requester}}</strong> wants permission to your medblock titled <a @click="handleOpenRecord({id: item.docid})">{{item.title}}</a>
+                                    </div>
+                                </div>
+                                <br>
+                                <nav class="level is-mobile">
+                                    <div class="level-item level-right">
+                                        <span class="button is-success" @click="handlePermitPermission(item)">Permit</span>
+                                    </div>
+                                </nav>
+                            </div>
+                            <div class="box" v-if="denied.length === 0">
+                                You have no denied permissions.
+                            </div>
+                        </div>
                     </div>
                     <!-- Manage Keys -->
                     <div class="column" v-bind:class="{'is-hidden': (current !== 'managekeys')}">
                         <h1 class="title">Manage Keys</h1>
                     </div>
 
+                </div>
+                <!-- Denied Text -->
+                <div id="deniedRecord" class="modal">
+                    <div class="modal-background"></div>
+                    <div class="modal-content">
+                        <div class="box">
+                            <h1 class="title is-size-4 has-text-centered">Denied Permission</h1>
+                            <h2 class="title is-size-5">Uh Oh!</h2>
+                            <p>
+                                Looks like youv'e been denied access to <b>{{formData.deniedRecord.title}}</b>!<br/>
+                                But all is not lost! You'll have to contact <a :href="mailify"><b>{{formData.deniedRecord.to}}</b></a> and ask them to give you access to the medblock, if you still need it.
+                            </p>
+                        </div>
+                    </div>
+                    <button class="modal-close is-large" aria-label="close" onclick="document.querySelector('#deniedRecord').classList.remove('is-active')"></button>
                 </div>
                 <!-- Create Key  -->
                 <div id="createKey" class="modal">
