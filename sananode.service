@@ -1,0 +1,14 @@
+[Unit]
+Description=Sana Node
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=idle
+Restart=always
+ExecStart=/usr/bin/docker-compose -f /home/pi/sananode/docker-compose.yml up
+User=pi
+ExecStop=/usr/bin/docker-compose -f /home/pi/sananode/docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target

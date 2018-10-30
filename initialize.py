@@ -66,15 +66,15 @@ def initializa_couchdb(couch_username, couch_password):
     print("[+] Creating txns database")
     requests.put(couchdb + "txns")
     print("[+] Creating Design Documents")
-    validate_medblock = {
-    '_id': '_design/validate_medblocks',
-    'validate_doc_update': 'function (newDoc, savedDoc, userCtx) {\nfunction require(field, message) {\nmessage = message || "Document must have a " + field;\nif (!newDoc[field]) throw({forbidden : message});\n};\nif (newDoc.type == "medblock") {\nrequire("format");\nrequire("files");\nrequire("keys");\nrequire("user");\n}\n}\n'
-    }
-    # requests.put(couchdb + "medblocks/_design/validate_medblocks", json=validate_medblock)
-    authenticate_only_user = {
-    "_id": "_design/only_user",
-    "validate_doc_update": "function(newDoc, oldDoc, userCtx){\r\nif (newDoc.creator.email !== userCtx.name){\r\nthrow({forbidden : \"User must be the same as the one who created this document.\"});\r\n}\r\nif (oldDoc){\r\nif (oldDoc.creator.email !== userCtx.name){\r\nthrow({forbidden: 'User not authorized to modify.'});\r\n}\r\n}\r\n}\r\n"
-    }
+    # validate_medblock = {
+    # '_id': '_design/validate_medblocks',
+    # 'validate_doc_update': 'function (newDoc, savedDoc, userCtx) {\nfunction require(field, message) {\nmessage = message || "Document must have a " + field;\nif (!newDoc[field]) throw({forbidden : message});\n};\nif (newDoc.type == "medblock") {\nrequire("format");\nrequire("files");\nrequire("keys");\nrequire("user");\n}\n}\n'
+    # }
+    # # requests.put(couchdb + "medblocks/_design/validate_medblocks", json=validate_medblock)
+    # authenticate_only_user = {
+    # "_id": "_design/only_user",
+    # "validate_doc_update": "function(newDoc, oldDoc, userCtx){\r\nif (newDoc.creator.email !== userCtx.name){\r\nthrow({forbidden : \"User must be the same as the one who created this document.\"});\r\n}\r\nif (oldDoc){\r\nif (oldDoc.creator.email !== userCtx.name){\r\nthrow({forbidden: 'User not authorized to modify.'});\r\n}\r\n}\r\n}\r\n"
+    # }
 
     # requests.put(couchdb + "medblocks/_design/only_user", json=authenticate_only_user)
     preview_medblock = {"_id":"_design/preview","views":{"list":{"map":"function (doc) {\n  if (doc.type=='medblock'){\n    emit(doc._id, {\n      creator: doc.creator.email,\n      title: doc.title,\n      recipient: doc.recipient,\n      files: doc.files.length,\n      permissions: doc.permissions,\n      denied: doc.denied,\n      keys: doc.keys\n    });\n  }\n}","reduce":"_count"},"patient":{"map":"function (doc) {\n  emit(doc.recipient, null);\n}"},"permissions":{"map":"function (doc) {\n  if (doc.permissions){\n  permitted = []\n  for (i=0;i<doc.keys.length;i++) {\n  permitted.push(toJSON(doc.keys[i].RSAPublicKey))\n  }\n  var denied = doc.denied;\n  for (i=0;i<doc.permissions.length;i++) {\n      if(permitted.indexOf(toJSON(doc.permissions[i].RSAPublicKey)) == -1 &&\n      denied.indexOf(doc.permissions[i].id) == -1) {\n        emit(doc.recipient, {\n          permission: doc.permissions[i].RSAPublicKey,\n          title: doc.title,\n          requester: doc.permissions[i].email,\n          id: doc.permissions[i].id\n        });\n      }\n  }\n  }\n\n}"}},"language":"javascript"}

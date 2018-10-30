@@ -167,7 +167,7 @@ def retrieve_from_tangle(email):
     hashes = api.find_transactions(addresses=[address], tags=list(tag_list.values()))['hashes']
     if len(hashes) == 0:
         print("[-] No matching hashes found")
-        return []
+        return [], False
     print("[+] Checking db for cached transactions")
     db_check = check_txn_db(hashes)
     cached = db_check['cached']

@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-
+from decouple import config
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -132,3 +132,5 @@ CELERY_BROKER_URL = 'amqp://rabbit'
 CELERY_RESULT_BACKEND = 'django-db'
 
 COUCHDB_BASE_URL = "http://couchdb:5984/"
+
+COUCHDB_ADMIN_BASE_URL = "http://{}:{}@couchdb:5984/".format(config("COUCH_USER", default='admin'), config("COUCH_PASSWORD", default='admin'))

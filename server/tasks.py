@@ -3,6 +3,8 @@ from celery.task.schedules import schedule
 from celery.decorators import periodic_task
 from .utils import decompose_medblocks, to_set, to_dict_list, reconstruct_medblocks, remove_duplicates
 from .blockchain import retrieve_from_tangle, broadcast_on_tangle, server
+import couchdb
+from sananode.settings import COUCHDB_BASE_URL
 from server.models import SyncParameters
 import requests
 import json
@@ -66,7 +68,7 @@ def check_iota_sync(email):
 
 @periodic_task(run_every=5, name="Sync IOTA", ignore_result=True)
 def check_all_users():
-    db = server['medblocks']
+    db = couchdb.Server("")
     emails = [i.key for i in db.view('preview/patient')]
     emails = remove_duplicates(emails)
     for email in emails:
