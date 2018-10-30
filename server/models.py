@@ -21,3 +21,6 @@ class Permission(models.Model):
         unique_together = ('user','medblockId')
     def email(self):
         return self.user.email
+
+class SyncParameters(models.Model):
+    seq = models.TextField()

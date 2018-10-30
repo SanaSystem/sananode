@@ -63,6 +63,8 @@ def initializa_couchdb(couch_username, couch_password):
     print(requests.put(couchdb + "_users").json())
     print("[+] Creating medblocks database")
     requests.put(couchdb + "medblocks")
+    print("[+] Creating txns database")
+    requests.put(couchdb + "txns")
     print("[+] Creating Design Documents")
     validate_medblock = {
     '_id': '_design/validate_medblocks',

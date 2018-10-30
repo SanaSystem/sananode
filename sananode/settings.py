@@ -130,3 +130,5 @@ STATIC_URL = '/static/'
 CELERY_BROKER_URL = 'amqp://rabbit'
 
 CELERY_RESULT_BACKEND = 'django-db'
+
+COUCHDB_BASE_URL = "http://couchdb:5984/"

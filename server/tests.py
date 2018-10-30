@@ -20,4 +20,4 @@ class TestIotaFunctions(TestCase):
     #         assert tag in tag_list.keys()
     
     def test_task(self):
-        check_iota_sync.delay("boo@test.com", "http://couchdb:5984")
+        check_iota_sync("tornadoalert@gmail.com")
