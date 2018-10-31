@@ -20,7 +20,7 @@ def async_broadcast_on_tangle(list_of_elements):
     if len(result) > 0:
         return True
     else:
-       time
+       return False
 
 @task
 def check_iota_sync(email):
@@ -57,10 +57,14 @@ def check_iota_sync(email):
                 print("[+] State change detected in medblocks database. Broadcasting messages on IOTA")
                 transmit_to_iota = db_medfrags - iota_medfrags
                 print("Transmitting {} elements to the tangle".format(len(transmit_to_iota)))
-                async_broadcast_on_tangle.delay(to_dict_list(transmit_to_iota))
-                print("Updating seq value to {}".format(last_seq))
-                current_params.seq = last_seq
-                current_params.save()
+                result = async_broadcast_on_tangle.delay(to_dict_list(transmit_to_iota))
+                if result.wait():
+                    print("Updating seq value to {}".format(last_seq))
+                    current_params.seq = last_seq
+                    current_params.save()
+                    return True
+                else:
+                    time.sleep(0.5)
             
             if iota_new:
                 print("[+] State change detected in IOTA transactions. Updating documents")
@@ -76,7 +80,7 @@ def check_iota_sync(email):
                     new_documents[i] = couchdb.Document(new_documents[i])
                 print("Updating {} documents on the database".format(len(new_documents)))
                 db.update(new_documents)
-                return True
+            return True
         finally:
             release_lock()
         print("Another instance running...")
