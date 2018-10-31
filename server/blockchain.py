@@ -90,6 +90,7 @@ def check_txn_db(hashes):
         'cached': cached,
     }
 
+# Slow...make it async
 def hashes_to_txns(hashes):
     """Also writes it to cache"""
     db = server['txns']
@@ -99,7 +100,6 @@ def hashes_to_txns(hashes):
         txn = iota.Transaction.from_tryte_string(tryte)
         # print(txn_json['hash_'])
         # print(txn_json['hash_'].__dict__)
-        print(txn_to_json(txn))
         db[str(txn.hash)] = txn_to_json(txn)
         print("[+] txn {} written to databse".format(txn.hash))
         txns.append(txn)
