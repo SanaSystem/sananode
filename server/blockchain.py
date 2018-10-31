@@ -51,7 +51,7 @@ def dict_to_txns(serialized_list):
         txns.append(txn)
     return txns
 
-
+# Slow. Each send_transfer must be async
 def broadcast_on_tangle(decomposed_list):
     print("[+] Broadcast to tangle initiated")
     serialized = serialize_decomposed(decomposed_list)

@@ -25,12 +25,9 @@ def async_broadcast_on_tangle(list_of_elements):
 @task
 def check_iota_sync(email):
     # list all documents associated with user
-    lock_id = "checkiotasync-lock-{}".format(email)
-    acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
-    release_lock = lambda: cache.delete(lock_id)
+    
 
-    if acquire_lock():
-        try:
+    
             db = server['medblocks']
             results, iota_new = retrieve_from_tangle(email)
             simple_sync = True
@@ -50,18 +47,18 @@ def check_iota_sync(email):
                     reconstruction_medfrags = iota_medfrags | db_medfrags
                     reconstruction_medfrags = to_dict_list(reconstruction_medfrags)
                     new_documents = reconstruct_medblocks(reconstruction_medfrags)
-                    for i in range(len(new_documents)):
-                        id = new_documents[i]['_id']
-                        try:
-                            new_documents[i]['_rev'] = db['_id'].rev
-                        except couchdb.http.ResourceNotFound:
-                            pass
-                        new_documents[i] = couchdb.Document(new_documents[i])
                     print("Updating {} documents on the database".format(len(new_documents)))
-                    db.update(new_documents)
+                    for doc in new_documents:
+                        id = doc['_id']
+                        doc = couchdb.Document(doc)
+                        try:
+                            old_document = db[id]
+                            doc['_rev'] = old_document.rev
+                            db.save(doc)
+                        except couchdb.http.ResourceNotFound:
+                            db[id] = doc
                 return True
-        finally:
-            release_lock()
+        
 
 def check_ipfs_sync(email):
     db = server['medblocks']
@@ -82,13 +79,18 @@ def check_ipfs_file(hash):
 
 @periodic_task(run_every=5, name="Sync IOTA", ignore_result=True)
 def check_all_users():
-    db = couchdb.Server(COUCHDB_ADMIN_BASE_URL)['_users']
-    emails = [i.key for i in db.view('preview/list')]
-    emails = remove_duplicates(emails)
-    for email in emails:
-        print("Checking for :{}".format(email))
-        check_iota_sync(email)
-        # check_ipfs_sync(email)
-
-
+    lock_id = "checkiotasync"
+    acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
+    release_lock = lambda: cache.delete(lock_id)
+    if acquire_lock():
+        try:
+            db = couchdb.Server(COUCHDB_ADMIN_BASE_URL)['_users']
+            emails = [i.key for i in db.view('preview/list')]
+            emails = remove_duplicates(emails)
+            for email in emails:
+                print("Checking for :{}".format(email))
+                check_iota_sync(email)
+                # check_ipfs_sync(email)
+        finally:
+            release_lock()
 
