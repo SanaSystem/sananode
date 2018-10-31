@@ -57,15 +57,11 @@ def check_iota_sync(email):
                 print("[+] State change detected in medblocks database. Broadcasting messages on IOTA")
                 transmit_to_iota = db_medfrags - iota_medfrags
                 print("Transmitting {} elements to the tangle".format(len(transmit_to_iota)))
-                result = async_broadcast_on_tangle.delay(to_dict_list(transmit_to_iota))
-                if result.wait():
+                result = broadcast_on_tangle(to_dict_list(transmit_to_iota))
+                if result:
                     print("Updating seq value to {}".format(last_seq))
                     current_params.seq = last_seq
                     current_params.save()
-                    return True
-                else:
-                    time.sleep(0.5)
-            
             if iota_new:
                 print("[+] State change detected in IOTA transactions. Updating documents")
                 reconstruction_medfrags = iota_medfrags | db_medfrags
