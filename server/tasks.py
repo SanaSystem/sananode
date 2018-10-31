@@ -107,6 +107,7 @@ def check_all_users():
     for email in emails:
         print("Checking for :{}".format(email))
         check_iota_sync(email)
+        check_ipfs_sync(email)
 
 
 
