@@ -1,5 +1,6 @@
 import json
 from itertools import groupby
+from sananode.settings import tag_list
 
 def to_set(list_of_objs):
     return set([json.dumps(obj, sort_keys=True) for obj in list_of_objs])
@@ -85,6 +86,10 @@ def decompose_medblocks(list_of_medblocks):
     decomposed = remove_duplicates(decomposed)
     return decomposed
 
+def approved_decompose_medblocks(list_of_medblocks):
+    decomposed = decompose_medblocks(list_of_medblocks)
+    return [medfrag for medfrag in decomposed if medfrag['tag'] in tag_list.keys()]
+    
 def reconstruct_medblocks(decomposed_list):
     # To Do
     # Add 'type'

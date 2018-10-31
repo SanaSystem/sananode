@@ -4,22 +4,13 @@ from itertools import groupby
 import couchdb
 import pickle
 import base64
-from sananode.settings import COUCHDB_BASE_URL
+from sananode.settings import COUCHDB_BASE_URL, tag_list, iotaNode
 # Using Test node. Public node commented.
 # iotaNode = "https://field.deviota.com:443"
-iotaNode = "https://nodes.testnet.iota.org:443"
+
 seed = ""
 api = iota.Iota(iotaNode, seed)
 server = couchdb.Server(COUCHDB_BASE_URL)
-
-tag_list = {
-    'register' : 'GFAQBESKMJIPYWPARQBZMROJVFP',
-    'body' : 'M9CJ9DLLGBDI9ZPXRIIPDCEBWGO',
-    'key': 'GQAZH9JTKGRTKMWQSLSYSVQ9HJG',
-    'permission': 'FKXHTC9ERWPKOXEBAFFYUTRDXJO',
-    'file': 'WYKOYVPPSGWVSPZIJXWHJTUEU9O',
-    'deny': 'K9FZJKOSGDRNRYCTGOPWSDBGYAL'
-}
 
 reverse_tag_list = {v:k for k,v in tag_list.items()}
 

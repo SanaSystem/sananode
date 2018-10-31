@@ -134,3 +134,14 @@ CELERY_RESULT_BACKEND = 'django-db'
 COUCHDB_BASE_URL = "http://couchdb:5984/"
 
 COUCHDB_ADMIN_BASE_URL = "http://{}:{}@couchdb:5984/".format(config("COUCH_USER", default='admin'), config("COUCH_PASSWORD", default='admin'))
+
+tag_list = {
+    'register' : 'GFAQBESKMJIPYWPARQBZMROJVFP',
+    'body' : 'M9CJ9DLLGBDI9ZPXRIIPDCEBWGO',
+    'key': 'GQAZH9JTKGRTKMWQSLSYSVQ9HJG',
+    'permission': 'FKXHTC9ERWPKOXEBAFFYUTRDXJO',
+    'file': 'WYKOYVPPSGWVSPZIJXWHJTUEU9O',
+    'deny': 'K9FZJKOSGDRNRYCTGOPWSDBGYAL'
+}
+
+iotaNode = "https://nodes.testnet.iota.org:443"

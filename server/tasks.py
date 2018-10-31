@@ -1,7 +1,7 @@
 from celery import shared_task, task
 from celery.task.schedules import schedule
 from celery.decorators import periodic_task
-from .utils import decompose_medblocks, to_set, to_dict_list, reconstruct_medblocks, remove_duplicates
+from .utils import decompose_medblocks, to_set, to_dict_list, reconstruct_medblocks, remove_duplicates, approved_decompose_medblocks
 from .blockchain import retrieve_from_tangle, broadcast_on_tangle, server
 import couchdb
 from sananode.settings import COUCHDB_ADMIN_BASE_URL
@@ -33,54 +33,35 @@ def check_iota_sync(email):
         try:
             db = server['medblocks']
             results, iota_new = retrieve_from_tangle(email)
-            try:
-                current_params = SyncParameters.objects.get(pk=1)
-            except SyncParameters.DoesNotExist:
-                print("[o] Creating Empty Sync parameters")
-                current_params = SyncParameters.objects.create(pk=1, seq='1')
-
-            last_seq = db.changes()['last_seq']
-            print("Current stored seq: {}...".format(current_params.seq[:20]))
-            if last_seq == current_params.seq:
-                print("[o] Nothing new in medblocks")
-                db_new = False
-            else:
-                print("[+] New changes in medblocks")
-                db_new = True
-            if db_new or iota_new:
-                print("[+] State changed. Getting ready...")
+            simple_sync = True
+            if simple_sync:
                 docs = [db[medblock.id] for medblock in db.view('preview/patient', key=email)]
-                db_medfrags = to_set(decompose_medblocks(docs))
+                db_medfrags = to_set(approved_decompose_medblocks(docs))
                 iota_medfrags = to_set(results)
-
-            if db_new: 
-                print("[+] State change detected in medblocks database. Broadcasting messages on IOTA")
                 transmit_to_iota = db_medfrags - iota_medfrags
-                print("Transmitting {} elements to the tangle".format(len(transmit_to_iota)))
-                result = broadcast_on_tangle(to_dict_list(transmit_to_iota))
-                if result:
-                    print("Updating seq value to {}".format(last_seq))
-                    current_params.seq = last_seq
-                    current_params.save()
-            if iota_new:
-                print("[+] State change detected in IOTA transactions. Updating documents")
-                reconstruction_medfrags = iota_medfrags | db_medfrags
-                reconstruction_medfrags = to_dict_list(reconstruction_medfrags)
-                new_documents = reconstruct_medblocks(reconstruction_medfrags)
-                for i in range(len(new_documents)):
-                    id = new_documents[i]['_id']
-                    try:
-                        new_documents[i]['_rev'] = db['_id'].rev
-                    except couchdb.http.ResourceNotFound:
-                        pass
-                    new_documents[i] = couchdb.Document(new_documents[i])
-                print("Updating {} documents on the database".format(len(new_documents)))
-                db.update(new_documents)
-            return True
+                print("DB MEDFRAGS: {} , IOTA MEDFRAGS: {}".format(len(db_medfrags), len(iota_medfrags)))
+                db_update = len(iota_medfrags - db_medfrags) > 0
+                
+                if len(transmit_to_iota) > 0:
+                    print("Transmitting {} transaction to IOTA".format(len(transmit_to_iota)))
+                    broadcast_on_tangle(to_dict_list(transmit_to_iota))
+                if db_update:
+                    print("Difference {}".format(iota_medfrags - db_medfrags))
+                    reconstruction_medfrags = iota_medfrags | db_medfrags
+                    reconstruction_medfrags = to_dict_list(reconstruction_medfrags)
+                    new_documents = reconstruct_medblocks(reconstruction_medfrags)
+                    for i in range(len(new_documents)):
+                        id = new_documents[i]['_id']
+                        try:
+                            new_documents[i]['_rev'] = db['_id'].rev
+                        except couchdb.http.ResourceNotFound:
+                            pass
+                        new_documents[i] = couchdb.Document(new_documents[i])
+                    print("Updating {} documents on the database".format(len(new_documents)))
+                    db.update(new_documents)
+                return True
         finally:
             release_lock()
-        print("Another instance running...")
-        return
 
 def check_ipfs_sync(email):
     db = server['medblocks']
@@ -107,7 +88,7 @@ def check_all_users():
     for email in emails:
         print("Checking for :{}".format(email))
         check_iota_sync(email)
-        check_ipfs_sync(email)
+        # check_ipfs_sync(email)
 
 
 
