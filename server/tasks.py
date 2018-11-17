@@ -25,9 +25,6 @@ def async_broadcast_on_tangle(list_of_elements):
 @task
 def check_iota_sync(email):
     # list all documents associated with user
-    
-
-    
             db = server['medblocks']
             results, iota_new = retrieve_from_tangle(email)
             simple_sync = True
@@ -94,3 +91,5 @@ def check_all_users():
         finally:
             release_lock()
 
+    else:
+        print("Task already running. Will wait for completion")

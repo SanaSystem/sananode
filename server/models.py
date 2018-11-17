@@ -24,3 +24,5 @@ class Permission(models.Model):
 
 class SyncParameters(models.Model):
     seq = models.TextField()
+    lock1 = models.BooleanField(default=False)
+    lock2 = models.BooleanField(default=False)

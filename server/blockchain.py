@@ -5,6 +5,7 @@ import couchdb
 import pickle
 import base64
 from sananode.settings import COUCHDB_BASE_URL, tag_list, iotaNode
+from .models import SyncParameters
 # Using Test node. Public node commented.
 # iotaNode = "https://field.deviota.com:443"
 
@@ -65,6 +66,10 @@ def broadcast_on_tangle(decomposed_list):
 
 def check_txn_db(hashes):
     """Returns {'new_hashes': [...], 'cached':{'txn_hash':txn,...}}"""
+    # sync = SyncParameters.objects.get(pk=1)
+    # sync.lock1 = True
+    # sync.save()
+    
     db = server['txns']
     new_hashes = []
     cached = []
@@ -75,7 +80,7 @@ def check_txn_db(hashes):
             cached.append(txn)
         except couchdb.http.ResourceNotFound:
             new_hashes.append(h)
-
+    
     return {
         'new_hashes': new_hashes,
         'cached': cached,
