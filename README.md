@@ -2,10 +2,13 @@
 
 ## Usage
 [Install docker](https://docs.docker.com/install/) and make sure docker-compose is installed.
-
 ```
 docker version
 docker-compose version
+```
+Initialize the node with python 3 
+```python
+python initialize.py
 ```
 Run the node with
 ```

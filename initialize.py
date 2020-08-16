@@ -117,6 +117,8 @@ def main():
         copy_env(platform)
     
     couch_username, couch_password = "admin", "admin"
+    print("[+] Deleting previous docker containers")
+    subprocess.call(command(["docker-compose","down", "-v"]), shell=True)
     print("[+] Building docker containers")
     subprocess.call(command(["docker-compose","build"]), shell=True)
     print("[+] Running 'docker-compose up' as a child process. If this is the first time this may take a long time...")
