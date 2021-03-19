@@ -13,7 +13,7 @@ django-celery-beat==1.1.1
 django-celery-results==1.0.1
 django-cors-headers==2.4.0
 django-decouple==2.1
-djangorestframework==3.9.1
+djangorestframework==3.11.2
 filters==1.3.2
 idna==2.7
 ipfsapi==0.4.3
