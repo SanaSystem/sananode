@@ -25,7 +25,7 @@ PyOTA==2.0.6
 pysha3==1.0.2
 python-dateutil==2.7.3
 pytz==2018.5
-PyYAML==5.1
+PyYAML==5.4
 redis==2.10.6
 regex==2018.8.29
 requests==2.20.0
